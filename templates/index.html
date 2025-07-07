@@ -3,52 +3,419 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>News Collection Demo</title>
+    <title>Financial News Collection Demo</title>
     <style>
-        .news-item { margin-bottom: 1em; border-bottom: 1px solid #ccc; padding-bottom: 1em; }
-        .news-title { cursor: pointer; color: #0074d9; }
-        .news-details { display: none; margin-top: 0.5em; }
-        .ticker-list { max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 8px; margin-bottom: 1em; }
-        .ticker-checkbox { margin-right: 8px; }
-        .ticker-label { margin-right: 16px; display: inline-block; min-width: 120px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .section h3 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        .news-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .news-title {
+            cursor: pointer;
+            color: #2980b9;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .news-title:hover {
+            color: #3498db;
+        }
+        .news-details {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .news-meta {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .ticker-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: white;
+            border-radius: 5px;
+        }
+        .ticker-checkbox {
+            margin-right: 8px;
+        }
+        .ticker-label {
+            margin-right: 16px;
+            display: inline-block;
+            min-width: 150px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .ticker-label:hover {
+            background: #f0f0f0;
+        }
+        #search-ticker {
+            margin-bottom: 15px;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .btn-success {
+            background: #27ae60;
+        }
+        .btn-success:hover {
+            background: #229954;
+        }
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .stats {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .ticker-badge {
+            background: #3498db;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        .sentiment-positive { color: #27ae60; }
+        .sentiment-negative { color: #e74c3c; }
+        .sentiment-neutral { color: #7f8c8d; }
+        .user-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .user-id {
+            font-family: monospace;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .session-warning {
+            background: #f39c12;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <h1>News Collection Demo</h1>
-    <div id="ticker-section">
-        <b>Seleziona i titoli di interesse:</b>
-        <div id="ticker-list" class="ticker-list"></div>
+    <h1>📈 Financial News Collection Demo</h1>
+    
+    <div class="user-info">
+        <h3>👤 Sessione Utente</h3>
+        <div id="user-info-content">
+            <div class="loading">Caricamento informazioni sessione...</div>
+        </div>
+        <div class="session-warning">
+            ⚠️ I dati sono salvati solo per questa sessione. Chiudendo il browser i dati andranno persi.
+        </div>
     </div>
-    <button onclick="updateSelectedTickers()">Aggiorna selezione</button>
-    <div id="selected-tickers"></div>
-    <div id="results"></div>
+    
+    <div class="container">
+        <div class="section">
+            <h3>🎯 Seleziona Titoli di Interesse</h3>
+            <input type="text" id="search-ticker" placeholder="🔍 Cerca ticker o nome azienda...">
+            <div id="ticker-list" class="ticker-list"></div>
+            <button class="btn" onclick="updateSelectedTickers()">Aggiorna Selezione</button>
+            <div id="selected-tickers" class="stats"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h3>📰 Ricerca News per Titoli</h3>
+            <div style="margin-bottom: 15px;">
+                <label>Giorni indietro: </label>
+                <select id="days-back">
+                    <option value="1">Ultimo giorno</option>
+                    <option value="3">Ultimi 3 giorni</option>
+                    <option value="7" selected>Ultima settimana</option>
+                    <option value="14">Ultime 2 settimane</option>
+                    <option value="30">Ultimo mese</option>
+                </select>
+            </div>
+            <button class="btn btn-success" onclick="searchTickerNews()">🔍 Cerca News</button>
+            <button class="btn" onclick="loadSavedNews()">📋 Carica News Salvate</button>
+            <button class="btn btn-danger" onclick="clearSavedNews()">🗑️ Cancella Tutto</button>
+            <div id="search-status"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h3>📊 Risultati News</h3>
+            <div id="results"></div>
+        </div>
+    </div>
+
     <script>
         let allTickers = [];
+        let filteredTickers = [];
         let selectedTickers = [];
+        let currentUser = null;
 
-        // Carica la lista dei ticker da static/tickers.json
-        fetch('/static/tickers.json')
+        // Carica informazioni utente
+        function loadUserInfo() {
+            fetch('/user_info')
+                .then(res => res.json())
+                .then(data => {
+                    currentUser = data;
+                    const userDiv = document.getElementById('user-info-content');
+                    userDiv.innerHTML = `
+                        <div><strong>ID Sessione:</strong></div>
+                        <div class="user-id">${data.user_id.substring(0, 8)}...</div>
+                        <div><strong>Ricerche salvate:</strong> ${data.total_searches}</div>
+                        <div><strong>Stato:</strong> ${data.session_active ? '✅ Attiva' : '❌ Inattiva'}</div>
+                    `;
+                })
+                .catch(err => {
+                    console.error('Errore nel caricamento info utente:', err);
+                    document.getElementById('user-info-content').innerHTML = 
+                        '<div style="color: #e74c3c;">❌ Errore nel caricamento sessione</div>';
+                });
+        }
+
+        // Carica la lista dei ticker
+        fetch('/tickers')
             .then(res => res.json())
             .then(data => {
-                allTickers = data;
+                allTickers = data.sort((a, b) => a.symbol.localeCompare(b.symbol));
+                filteredTickers = allTickers;
                 renderTickerCheckboxes();
+            })
+            .catch(err => {
+                console.error('Errore nel caricamento tickers:', err);
+                document.getElementById('ticker-list').innerHTML = '<p class="loading">Errore nel caricamento dei ticker</p>';
             });
+
+        document.getElementById('search-ticker').addEventListener('input', function() {
+            const val = this.value.toLowerCase();
+            filteredTickers = allTickers.filter(t =>
+                t.symbol.toLowerCase().includes(val) ||
+                t.name.toLowerCase().includes(val)
+            );
+            renderTickerCheckboxes();
+        });
 
         function renderTickerCheckboxes() {
             const listDiv = document.getElementById('ticker-list');
-            listDiv.innerHTML = allTickers.map(t =>
-                `<label class='ticker-label'><input type='checkbox' class='ticker-checkbox' value='${t.symbol}'>${t.symbol} - ${t.name}</label>`
+            listDiv.innerHTML = filteredTickers.map(t =>
+                `<label class='ticker-label'><input type='checkbox' class='ticker-checkbox' value='${t.symbol}' ${selectedTickers.includes(t.symbol) ? 'checked' : ''}>${t.symbol} - ${t.name}</label>`
             ).join('<br>');
         }
 
         function updateSelectedTickers() {
             const checkboxes = document.querySelectorAll('.ticker-checkbox:checked');
             selectedTickers = Array.from(checkboxes).map(cb => cb.value);
-            document.getElementById('selected-tickers').innerHTML =
-                selectedTickers.length ?
-                `<b>Selezionati:</b> ${selectedTickers.join(', ')}` :
-                '<i>Nessun titolo selezionato</i>';
+            const selectedDiv = document.getElementById('selected-tickers');
+            
+            if (selectedTickers.length) {
+                selectedDiv.innerHTML = `
+                    <strong>✅ Selezionati (${selectedTickers.length}):</strong><br>
+                    ${selectedTickers.map(t => `<span class="ticker-badge">${t}</span>`).join('')}
+                `;
+            } else {
+                selectedDiv.innerHTML = '<i>Nessun titolo selezionato</i>';
+            }
         }
+
+        function searchTickerNews() {
+            if (selectedTickers.length === 0) {
+                alert('Seleziona almeno un ticker prima di cercare news!');
+                return;
+            }
+
+            const daysBack = document.getElementById('days-back').value;
+            const statusDiv = document.getElementById('search-status');
+            
+            statusDiv.innerHTML = '<div class="loading">🔍 Ricerca news in corso...</div>';
+            
+            fetch('/search_ticker_news', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tickers: selectedTickers,
+                    days_back: parseInt(daysBack)
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    statusDiv.innerHTML = `
+                        <div class="stats">
+                            ✅ Trovate ${data.total_articles} news per ${selectedTickers.join(', ')}<br>
+                            💾 Salvate nella sessione: ${data.user_id.substring(0, 8)}...
+                        </div>
+                    `;
+                    displayNews(data.articles);
+                    // Aggiorna info utente
+                    loadUserInfo();
+                } else {
+                    statusDiv.innerHTML = `<div style="color: red;">❌ Errore: ${data.error}</div>`;
+                }
+            })
+            .catch(err => {
+                statusDiv.innerHTML = `<div style="color: red;">❌ Errore di rete: ${err.message}</div>`;
+            });
+        }
+
+        function loadSavedNews() {
+            fetch('/saved_news')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.news && data.news.length > 0) {
+                        const allArticles = [];
+                        data.news.forEach(search => {
+                            if (search.articles) {
+                                allArticles.push(...search.articles);
+                            }
+                        });
+                        displayNews(allArticles, `News Salvate (${data.total_searches} ricerche)`);
+                    } else {
+                        document.getElementById('results').innerHTML = '<p class="loading">Nessuna news salvata in questa sessione</p>';
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('results').innerHTML = `<p style="color: red;">Errore nel caricamento: ${err.message}</p>`;
+                });
+        }
+
+        function clearSavedNews() {
+            if (confirm('Sei sicuro di voler cancellare tutte le news salvate in questa sessione?')) {
+                fetch('/clear_news', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('results').innerHTML = '<p class="loading">✅ News cancellate con successo</p>';
+                            loadUserInfo(); // Aggiorna info utente
+                        } else {
+                            alert('Errore nella cancellazione: ' + data.error);
+                        }
+                    })
+                    .catch(err => {
+                        alert('Errore di rete: ' + err.message);
+                    });
+            }
+        }
+
+        function displayNews(articles, title = 'Risultati News') {
+            const resultsDiv = document.getElementById('results');
+            
+            if (articles.length === 0) {
+                resultsDiv.innerHTML = '<p class="loading">Nessuna news trovata</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = `
+                <h4>${title} (${articles.length} articoli)</h4>
+                ${articles.map((article, index) => `
+                    <div class="news-item">
+                        <div class="news-title" onclick="toggleDetails(${index})">
+                            📰 ${article.title}
+                        </div>
+                        <div class="news-meta">
+                            <span class="ticker-badge">${article.ticker}</span>
+                            📅 ${new Date(article.publishedAt).toLocaleString('it-IT')} | 
+                            📰 ${article.source} |
+                            <span class="sentiment-${article.sentiment}">${getSentimentIcon(article.sentiment)} ${article.sentiment}</span>
+                        </div>
+                        <div id="details-${index}" class="news-details">
+                            <p><strong>Descrizione:</strong> ${article.description || 'N/A'}</p>
+                            <p><strong>Contenuto:</strong> ${article.text || 'N/A'}</p>
+                            <p><a href="${article.url}" target="_blank" style="color: #3498db;">🔗 Leggi articolo completo</a></p>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function toggleDetails(index) {
+            const details = document.getElementById(`details-${index}`);
+            details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function getSentimentIcon(sentiment) {
+            switch(sentiment) {
+                case 'positive': return '📈';
+                case 'negative': return '📉';
+                default: return '➡️';
+            }
+        }
+
+        // Inizializzazione
+        loadUserInfo();
+        loadSavedNews();
     </script>
 </body>
 </html> 
