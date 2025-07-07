@@ -19,20 +19,14 @@ def search():
     query = data.get('query')
     category = data.get('category')
     source = data.get('source')
-    params = {
-        'q': query,
-        'language': 'it',
-        'page_size': 5
-    }
-    if category:
-        params['category'] = category
+    # Logica corretta per evitare ValueError
     if source:
-        params['sources'] = source
-    # Scegli endpoint in base a category
-    if category:
-        articles = newsapi.get_top_headlines(q=query, language='it', category=category, page_size=5, sources=source or None)
+        # Se l'utente seleziona una fonte, ignora la categoria
+        articles = newsapi.get_top_headlines(q=query, language='it', page_size=5, sources=source)
+    elif category:
+        articles = newsapi.get_top_headlines(q=query, language='it', page_size=5, category=category)
     else:
-        articles = newsapi.get_everything(q=query, language='it', page_size=5, sources=source or None)
+        articles = newsapi.get_everything(q=query, language='it', page_size=5)
     results = []
     for art in articles['articles']:
         url = art['url']
