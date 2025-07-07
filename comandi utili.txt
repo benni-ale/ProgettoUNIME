@@ -1,0 +1,4 @@
+comandi utili 
+ docker build -t dp .   
+ docker run -p 5000:5000 dp
+heroku logs --tail --app unime01 

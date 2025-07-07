@@ -13,6 +13,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia il resto del codice dell'applicazione
 COPY . .
 
+# Esegui lo script per aggiornare la lista dei ticker
+RUN python scripts/update_tickers.py
+
 # Esponi la porta su cui l'applicazione gira
 EXPOSE 5000
 

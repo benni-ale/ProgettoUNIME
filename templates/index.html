@@ -8,63 +8,46 @@
         .news-item { margin-bottom: 1em; border-bottom: 1px solid #ccc; padding-bottom: 1em; }
         .news-title { cursor: pointer; color: #0074d9; }
         .news-details { display: none; margin-top: 0.5em; }
+        .ticker-list { max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 8px; margin-bottom: 1em; }
+        .ticker-checkbox { margin-right: 8px; }
+        .ticker-label { margin-right: 16px; display: inline-block; min-width: 120px; }
     </style>
 </head>
 <body>
     <h1>News Collection Demo</h1>
-    <input type="text" id="query" placeholder="Cerca notizie...">
-    <select id="category">
-        <option value="">Tutte le categorie</option>
-        <option value="business">Business</option>
-        <option value="technology">Technology</option>
-        <option value="science">Science</option>
-        <option value="health">Health</option>
-        <option value="entertainment">Entertainment</option>
-        <option value="sports">Sports</option>
-    </select>
-    <select id="source">
-        <option value="">Tutte le fonti</option>
-        <option value="il-sole-24-ore">Il Sole 24 Ore</option>
-        <option value="ansa">ANSA</option>
-        <option value="bloomberg">Bloomberg</option>
-        <option value="reuters">Reuters</option>
-        <option value="wall-street-journal">Wall Street Journal</option>
-        <option value="motley-fool">Motley Fool</option>
-        <option value="investing-com">Investing.com</option>
-    </select>
-    <button onclick="searchNews()">Cerca</button>
+    <div id="ticker-section">
+        <b>Seleziona i titoli di interesse:</b>
+        <div id="ticker-list" class="ticker-list"></div>
+    </div>
+    <button onclick="updateSelectedTickers()">Aggiorna selezione</button>
+    <div id="selected-tickers"></div>
     <div id="results"></div>
     <script>
-        function searchNews() {
-            const query = document.getElementById('query').value;
-            const category = document.getElementById('category').value;
-            const source = document.getElementById('source').value;
-            document.getElementById('results').innerHTML = 'Caricamento...';
-            fetch('/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query, category, source })
-            })
+        let allTickers = [];
+        let selectedTickers = [];
+
+        // Carica la lista dei ticker da static/tickers.json
+        fetch('/static/tickers.json')
             .then(res => res.json())
             .then(data => {
-                let html = '';
-                data.forEach((news, idx) => {
-                    html += `<div class='news-item'>
-                        <div class='news-title' onclick='toggleDetails(${idx})'>${news.title}</div>
-                        <div class='news-details' id='details-${idx}'>
-                            <p><b>Fonte:</b> ${news.source}</p>
-                            <p><b>Pubblicato:</b> ${news.publishedAt}</p>
-                            <p><b>URL:</b> <a href='${news.url}' target='_blank'>${news.url}</a></p>
-                            <p>${news.text ? news.text : (news.error ? 'Errore: ' + news.error : '')}</p>
-                        </div>
-                    </div>`;
-                });
-                document.getElementById('results').innerHTML = html;
+                allTickers = data;
+                renderTickerCheckboxes();
             });
+
+        function renderTickerCheckboxes() {
+            const listDiv = document.getElementById('ticker-list');
+            listDiv.innerHTML = allTickers.map(t =>
+                `<label class='ticker-label'><input type='checkbox' class='ticker-checkbox' value='${t.symbol}'>${t.symbol} - ${t.name}</label>`
+            ).join('<br>');
         }
-        function toggleDetails(idx) {
-            const el = document.getElementById('details-' + idx);
-            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+
+        function updateSelectedTickers() {
+            const checkboxes = document.querySelectorAll('.ticker-checkbox:checked');
+            selectedTickers = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById('selected-tickers').innerHTML =
+                selectedTickers.length ?
+                `<b>Selezionati:</b> ${selectedTickers.join(', ')}` :
+                '<i>Nessun titolo selezionato</i>';
         }
     </script>
 </body>
