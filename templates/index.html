@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Extraction Demo</title>
+</head>
+<body>
+    <h1>News Extraction Demo</h1>
+    <ul>
+        {% for article in news %}
+        <li>
+            <h2>{{ article.title }}</h2>
+            <p>Source: {{ article.source }}</p>
+            <p>Published: {{ article.time_published }}</p>
+            <p>Tickers: {{ article.stocks_mentioned }}</p>
+            <p>Sentiments: {{ article.ticker_sentiments }}</p>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html> 
