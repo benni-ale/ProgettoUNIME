@@ -1,22 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>News Extraction Demo</title>
+    <title>News Collection Demo</title>
+    <style>
+        .news-item { margin-bottom: 1em; border-bottom: 1px solid #ccc; padding-bottom: 1em; }
+        .news-title { cursor: pointer; color: #0074d9; }
+        .news-details { display: none; margin-top: 0.5em; }
+    </style>
 </head>
 <body>
-    <h1>News Extraction Demo</h1>
-    <ul>
-        {% for article in news %}
-        <li>
-            <h2>{{ article.title }}</h2>
-            <p>Source: {{ article.source }}</p>
-            <p>Published: {{ article.time_published }}</p>
-            <p>Tickers: {{ article.stocks_mentioned }}</p>
-            <p>Sentiments: {{ article.ticker_sentiments }}</p>
-        </li>
-        {% endfor %}
-    </ul>
+    <h1>News Collection Demo</h1>
+    <input type="text" id="query" placeholder="Cerca notizie...">
+    <select id="category">
+        <option value="">Tutte le categorie</option>
+        <option value="business">Business</option>
+        <option value="technology">Technology</option>
+        <option value="science">Science</option>
+        <option value="health">Health</option>
+        <option value="entertainment">Entertainment</option>
+        <option value="sports">Sports</option>
+    </select>
+    <select id="source">
+        <option value="">Tutte le fonti</option>
+        <option value="il-sole-24-ore">Il Sole 24 Ore</option>
+        <option value="ansa">ANSA</option>
+        <option value="bloomberg">Bloomberg</option>
+        <option value="reuters">Reuters</option>
+        <option value="wall-street-journal">Wall Street Journal</option>
+        <option value="motley-fool">Motley Fool</option>
+        <option value="investing-com">Investing.com</option>
+    </select>
+    <button onclick="searchNews()">Cerca</button>
+    <div id="results"></div>
+    <script>
+        function searchNews() {
+            const query = document.getElementById('query').value;
+            const category = document.getElementById('category').value;
+            const source = document.getElementById('source').value;
+            document.getElementById('results').innerHTML = 'Caricamento...';
+            fetch('/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, category, source })
+            })
+            .then(res => res.json())
+            .then(data => {
+                let html = '';
+                data.forEach((news, idx) => {
+                    html += `<div class='news-item'>
+                        <div class='news-title' onclick='toggleDetails(${idx})'>${news.title}</div>
+                        <div class='news-details' id='details-${idx}'>
+                            <p><b>Fonte:</b> ${news.source}</p>
+                            <p><b>Pubblicato:</b> ${news.publishedAt}</p>
+                            <p><b>URL:</b> <a href='${news.url}' target='_blank'>${news.url}</a></p>
+                            <p>${news.text ? news.text : (news.error ? 'Errore: ' + news.error : '')}</p>
+                        </div>
+                    </div>`;
+                });
+                document.getElementById('results').innerHTML = html;
+            });
+        }
+        function toggleDetails(idx) {
+            const el = document.getElementById('details-' + idx);
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+    </script>
 </body>
 </html> 
