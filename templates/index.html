@@ -5,107 +5,170 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial News Collection Demo</title>
     <style>
+        :root {
+            --unime-blu: #0066b3;
+            --unime-azzurro: #00b4e3;
+            --unime-blu-scuro: #003366;
+            --unime-grigio: #f4f8fb;
+            --unime-bianco: #fff;
+            --unime-accent: #eaf6fb;
+        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: 'Arial', 'Roboto', 'Segoe UI', sans-serif;
+            background: var(--unime-grigio);
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: var(--unime-blu);
+            color: var(--unime-bianco);
+            padding: 0;
+            border-bottom: none;
+        }
+        .header-bar {
+            height: 6px;
+            background: var(--unime-azzurro);
+        }
+        .header-content {
+            display: flex;
+            align-items: flex-start;
+            padding: 12px 24px 8px 24px;
+        }
+        .header-logo {
+            height: 48px;
+            width: 48px;
+            margin-right: 18px;
+            margin-top: 2px;
+            border-radius: 50%;
+            background: var(--unime-bianco);
+            object-fit: contain;
+            border: 1.5px solid var(--unime-azzurro);
+        }
+        .header-titles {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .header-title-main {
+            font-size: 1.45rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--unime-bianco);
+            line-height: 1.1;
+        }
+        .header-title-sub {
+            font-size: 1.05rem;
+            font-weight: 400;
+            color: var(--unime-azzurro);
+            margin-top: 2px;
+            letter-spacing: 0.2px;
+        }
+        @media (max-width: 700px) {
+            .header-content { flex-direction: column; align-items: flex-start; padding: 10px 6px 6px 6px; }
+            .header-logo { margin-bottom: 8px; margin-right: 0; height: 38px; width: 38px; }
+            .header-title-main { font-size: 1.1rem; }
+            .header-title-sub { font-size: 0.9rem; }
+            .container { padding: 8px; }
+            .section { padding: 8px; }
         }
         .container {
-            background: white;
-            padding: 30px;
+            background: var(--unime-bianco);
+            padding: 24px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            box-shadow: none;
+            margin: 28px auto 18px auto;
+            max-width: 900px;
+            border: 1.5px solid var(--unime-blu);
         }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .section {
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-        }
-        .section h3 {
-            color: #34495e;
+        h1, h3, h4 {
+            color: var(--unime-blu-scuro);
             margin-top: 0;
         }
-        .news-item {
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 0.5em;
+        }
+        .section {
+            margin-bottom: 24px;
+            padding: 16px;
+            border: 1px solid var(--unime-azzurro);
             border-radius: 8px;
-            background: #fafafa;
+            background: var(--unime-accent);
+        }
+        .news-item {
+            margin-bottom: 18px;
+            padding: 13px;
+            border: 1px solid var(--unime-azzurro);
+            border-radius: 8px;
+            background: var(--unime-bianco);
         }
         .news-title {
             cursor: pointer;
-            color: #2980b9;
+            color: var(--unime-blu);
             font-weight: bold;
             font-size: 16px;
             margin-bottom: 10px;
         }
         .news-title:hover {
-            color: #3498db;
+            color: var(--unime-azzurro);
         }
         .news-details {
             display: none;
             margin-top: 10px;
             padding: 10px;
-            background: white;
+            background: var(--unime-accent);
             border-radius: 5px;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid var(--unime-blu);
         }
         .news-meta {
-            color: #7f8c8d;
+            color: #555;
             font-size: 14px;
             margin-bottom: 10px;
         }
         .ticker-list {
             max-height: 300px;
             overflow-y: auto;
-            border: 1px solid #ddd;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: white;
+            border: 1px solid var(--unime-azzurro);
+            padding: 12px;
+            margin-bottom: 12px;
+            background: var(--unime-bianco);
             border-radius: 5px;
         }
         .ticker-checkbox {
             margin-right: 8px;
         }
         .ticker-label {
-            margin-right: 16px;
+            margin-right: 12px;
             display: inline-block;
-            min-width: 150px;
-            padding: 5px;
+            min-width: 140px;
+            padding: 4px;
             border-radius: 3px;
         }
         .ticker-label:hover {
-            background: #f0f0f0;
+            background: var(--unime-accent);
         }
         #search-ticker {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
+            padding: 8px;
+            border: 1px solid var(--unime-azzurro);
             border-radius: 5px;
             font-size: 14px;
         }
         .btn {
-            background: #3498db;
-            color: white;
+            background: var(--unime-blu);
+            color: var(--unime-bianco);
             border: none;
-            padding: 10px 20px;
+            padding: 9px 18px;
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
-            margin-right: 10px;
+            margin-right: 8px;
+            transition: background 0.2s;
         }
         .btn:hover {
-            background: #2980b9;
+            background: var(--unime-azzurro);
+            color: var(--unime-blu-scuro);
         }
         .btn-danger {
             background: #e74c3c;
@@ -114,10 +177,20 @@
             background: #c0392b;
         }
         .btn-success {
-            background: #27ae60;
+            background: var(--unime-azzurro);
+            color: var(--unime-blu-scuro);
         }
         .btn-success:hover {
-            background: #229954;
+            background: var(--unime-blu);
+            color: var(--unime-bianco);
+        }
+        .btn-local {
+            background: #f5b041;
+            color: #fff;
+        }
+        .btn-local:hover {
+            background: #d68910;
+            color: #fff;
         }
         .loading {
             text-align: center;
@@ -125,14 +198,15 @@
             font-style: italic;
         }
         .stats {
-            background: #ecf0f1;
-            padding: 15px;
+            background: var(--unime-accent);
+            padding: 12px;
             border-radius: 5px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            color: var(--unime-blu-scuro);
         }
         .ticker-badge {
-            background: #3498db;
-            color: white;
+            background: var(--unime-blu);
+            color: var(--unime-bianco);
             padding: 3px 8px;
             border-radius: 12px;
             font-size: 12px;
@@ -142,11 +216,11 @@
         .sentiment-negative { color: #e74c3c; }
         .sentiment-neutral { color: #7f8c8d; }
         .user-info {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
+            background: var(--unime-blu);
+            color: var(--unime-bianco);
+            padding: 12px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             text-align: center;
         }
         .user-id {
@@ -160,16 +234,24 @@
         .session-warning {
             background: #f39c12;
             color: white;
-            padding: 10px;
+            padding: 8px;
             border-radius: 5px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-align: center;
         }
     </style>
 </head>
 <body>
-    <h1>📈 Financial News Collection Demo</h1>
-    
+    <header>
+        <div class="header-content">
+            <img src="/static/logo_unime.png" alt="Logo Unime" class="header-logo" />
+            <div class="header-titles">
+                <span class="header-title-main">Università degli Studi di Messina</span>
+                <span class="header-title-sub">Demo News Finanziarie</span>
+            </div>
+        </div>
+        <div class="header-bar"></div>
+    </header>
     <div class="user-info">
         <h3>👤 Sessione Utente</h3>
         <div id="user-info-content">
@@ -179,17 +261,19 @@
             ⚠️ I dati sono salvati solo per questa sessione. Chiudendo il browser i dati andranno persi.
         </div>
     </div>
-    
     <div class="container">
         <div class="section">
             <h3>🎯 Seleziona Titoli di Interesse</h3>
+            <div style="margin-bottom: 8px;">
+                <button class="btn btn-local" onclick="selectAllTickers()">Seleziona Tutti</button>
+                <button class="btn btn-local" onclick="deselectAllTickers()">Deseleziona Tutti</button>
+            </div>
             <input type="text" id="search-ticker" placeholder="🔍 Cerca ticker o nome azienda...">
             <div id="ticker-list" class="ticker-list"></div>
             <button class="btn" onclick="updateSelectedTickers()">Aggiorna Selezione</button>
             <div id="selected-tickers" class="stats"></div>
         </div>
     </div>
-
     <div class="container">
         <div class="section">
             <h3>📰 Ricerca News per Titoli</h3>
@@ -204,24 +288,23 @@
                 </select>
             </div>
             <button class="btn btn-success" onclick="searchTickerNews()">🔍 Cerca News</button>
-            <button class="btn" onclick="loadSavedNews()">📋 Carica News Salvate</button>
-            <button class="btn btn-danger" onclick="clearSavedNews()">🗑️ Cancella Tutto</button>
+            <button class="btn btn-local" onclick="saveNewsLocally()">💾 Salva News Localmente</button>
+            <button class="btn btn-local" onclick="loadLocalNewsForSelected()">📂 Visualizza News Salvate</button>
             <div id="search-status"></div>
         </div>
     </div>
-
     <div class="container">
         <div class="section">
             <h3>📊 Risultati News</h3>
             <div id="results"></div>
         </div>
     </div>
-
     <script>
         let allTickers = [];
         let filteredTickers = [];
         let selectedTickers = [];
         let currentUser = null;
+        let lastNewsResults = [];
 
         // Carica informazioni utente
         function loadUserInfo() {
@@ -371,12 +454,11 @@
 
         function displayNews(articles, title = 'Risultati News') {
             const resultsDiv = document.getElementById('results');
-            
+            lastNewsResults = articles; // Salva l'ultimo risultato per salvataggio locale
             if (articles.length === 0) {
                 resultsDiv.innerHTML = '<p class="loading">Nessuna news trovata</p>';
                 return;
             }
-
             resultsDiv.innerHTML = `
                 <h4>${title} (${articles.length} articoli)</h4>
                 ${articles.map((article, index) => `
@@ -411,6 +493,63 @@
                 case 'negative': return '📉';
                 default: return '➡️';
             }
+        }
+
+        // Salva news localmente per ogni ticker selezionato (append, no overwrite, anche tra ricerche diverse)
+        function saveNewsLocally() {
+            if (!lastNewsResults || lastNewsResults.length === 0) {
+                alert('Nessuna news da salvare!');
+                return;
+            }
+            // Per ogni ticker selezionato, salva solo le news relative a quel ticker
+            selectedTickers.forEach(ticker => {
+                // News dell'ultima ricerca per questo ticker
+                const newNews = lastNewsResults.filter(news => news.ticker === ticker);
+                if (newNews.length === 0) return; // niente da salvare per questo ticker
+                // Carica news già presenti
+                const existing = JSON.parse(localStorage.getItem('local_news_' + ticker) || '[]');
+                // Unisci evitando duplicati per url
+                const all = [...existing];
+                newNews.forEach(news => {
+                    if (!all.some(n => n.url === news.url)) {
+                        all.push(news);
+                    }
+                });
+                localStorage.setItem('local_news_' + ticker, JSON.stringify(all));
+            });
+            alert('News aggiunte localmente per ogni ticker selezionato!');
+        }
+
+        // Carica news locali solo per i ticker selezionati
+        function loadLocalNewsForSelected() {
+            if (!selectedTickers.length) {
+                alert('Seleziona almeno un ticker!');
+                return;
+            }
+            const allNews = [];
+            selectedTickers.forEach(ticker => {
+                const news = JSON.parse(localStorage.getItem('local_news_' + ticker) || '[]');
+                allNews.push(...news);
+            });
+            if (allNews.length === 0) {
+                alert('Nessuna news locale trovata per i ticker selezionati!');
+                return;
+            }
+            displayNews(allNews, 'News Salvate per Selezionati');
+        }
+
+        // Seleziona tutti i ticker filtrati
+        function selectAllTickers() {
+            selectedTickers = filteredTickers.map(t => t.symbol);
+            renderTickerCheckboxes();
+            updateSelectedTickers();
+        }
+
+        // Deseleziona tutti i ticker
+        function deselectAllTickers() {
+            selectedTickers = [];
+            renderTickerCheckboxes();
+            updateSelectedTickers();
         }
 
         // Inizializzazione

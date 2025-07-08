@@ -108,18 +108,23 @@ def search_ticker_news():
         return jsonify({'error': 'Nessun ticker specificato'}), 400
     
     all_results = []
+    from datetime import datetime, timedelta
+    from_date = (datetime.utcnow() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+    print(f"[DEBUG] Cerco news per tickers: {tickers} dal {from_date}")
     
     for ticker in tickers:
         try:
             # Cerca news per il ticker
             query = f'"{ticker}" OR "{ticker} stock" OR "{ticker} shares"'
+            print(f"[DEBUG] Query NewsAPI: {query}")
             articles = newsapi.get_everything(
                 q=query,
                 language='en',
                 sort_by='publishedAt',
-                from_param=f'{days_back} days ago',
+                from_param=from_date,
                 page_size=10
             )
+            print(f"[DEBUG] Risposta NewsAPI per {ticker}: {json.dumps(articles)[:500]}")
             
             ticker_results = []
             for art in articles.get('articles', []):
@@ -141,7 +146,7 @@ def search_ticker_news():
                         'sentiment': 'neutral'  # Placeholder per sentiment analysis
                     })
                 except Exception as e:
-                    # Se non riesce a scaricare l'articolo, usa i dati base
+                    print(f"[DEBUG] Errore parsing articolo {url}: {e}")
                     ticker_results.append({
                         'ticker': ticker,
                         'title': art['title'],
@@ -156,10 +161,11 @@ def search_ticker_news():
             all_results.extend(ticker_results)
             
             # Pausa per evitare rate limiting
+            import time
             time.sleep(0.1)
             
         except Exception as e:
-            print(f"Errore nella ricerca news per {ticker}: {e}")
+            print(f"[DEBUG] Errore nella ricerca news per {ticker}: {e}")
             continue
     
     # Salva i risultati nella sessione dell'utente
@@ -171,6 +177,7 @@ def search_ticker_news():
             'articles': all_results
         })
     
+    print(f"[DEBUG] Totale articoli trovati: {len(all_results)}")
     return jsonify({
         'success': True,
         'total_articles': len(all_results),
