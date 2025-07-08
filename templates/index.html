@@ -12,6 +12,7 @@
             --unime-grigio: #f4f8fb;
             --unime-bianco: #fff;
             --unime-accent: #eaf6fb;
+            --unime-giallo: #f5b041;
         }
         body {
             font-family: 'Arial', 'Roboto', 'Segoe UI', sans-serif;
@@ -63,44 +64,59 @@
             margin-top: 2px;
             letter-spacing: 0.2px;
         }
-        @media (max-width: 700px) {
-            .header-content { flex-direction: column; align-items: flex-start; padding: 10px 6px 6px 6px; }
-            .header-logo { margin-bottom: 8px; margin-right: 0; height: 38px; width: 38px; }
-            .header-title-main { font-size: 1.1rem; }
-            .header-title-sub { font-size: 0.9rem; }
-            .container { padding: 8px; }
-            .section { padding: 8px; }
+        .main-layout {
+            display: flex;
+            gap: 32px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 12px 0 12px;
         }
-        .container {
+        .col-left {
+            flex: 2;
+            min-width: 0;
+        }
+        .col-right {
+            flex: 1;
+            min-width: 320px;
+            max-width: 420px;
+            background: var(--unime-accent);
+            border: 1.5px solid var(--unime-blu);
+            border-radius: 10px;
+            padding: 18px 14px 18px 14px;
+            margin-top: 0;
+            height: fit-content;
+            position: sticky;
+            top: 24px;
+        }
+        @media (max-width: 1100px) {
+            .main-layout { flex-direction: column; gap: 0; }
+            .col-right { max-width: 100%; min-width: 0; position: static; margin-top: 24px; }
+        }
+        .container, .section {
             background: var(--unime-bianco);
-            padding: 24px;
             border-radius: 10px;
             box-shadow: none;
-            margin: 28px auto 18px auto;
-            max-width: 900px;
             border: 1.5px solid var(--unime-blu);
+            margin-bottom: 24px;
         }
+        .container { padding: 24px; }
+        .section { padding: 16px; }
         h1, h3, h4 {
             color: var(--unime-blu-scuro);
             margin-top: 0;
         }
-        h1 {
-            font-size: 2.2rem;
-            margin-bottom: 0.5em;
-        }
-        .section {
-            margin-bottom: 24px;
-            padding: 16px;
-            border: 1px solid var(--unime-azzurro);
-            border-radius: 8px;
-            background: var(--unime-accent);
-        }
+        h1 { font-size: 2.2rem; margin-bottom: 0.5em; }
         .news-item {
             margin-bottom: 18px;
             padding: 13px;
             border: 1px solid var(--unime-azzurro);
             border-radius: 8px;
             background: var(--unime-bianco);
+            transition: box-shadow 0.2s, border 0.2s;
+        }
+        .news-item.highlight {
+            box-shadow: 0 0 0 2px var(--unime-giallo);
+            border: 2px solid var(--unime-giallo);
         }
         .news-title {
             cursor: pointer;
@@ -109,9 +125,7 @@
             font-size: 16px;
             margin-bottom: 10px;
         }
-        .news-title:hover {
-            color: var(--unime-azzurro);
-        }
+        .news-title:hover { color: var(--unime-azzurro); }
         .news-details {
             display: none;
             margin-top: 10px;
@@ -134,9 +148,7 @@
             background: var(--unime-bianco);
             border-radius: 5px;
         }
-        .ticker-checkbox {
-            margin-right: 8px;
-        }
+        .ticker-checkbox { margin-right: 8px; }
         .ticker-label {
             margin-right: 12px;
             display: inline-block;
@@ -144,9 +156,7 @@
             padding: 4px;
             border-radius: 3px;
         }
-        .ticker-label:hover {
-            background: var(--unime-accent);
-        }
+        .ticker-label:hover { background: var(--unime-accent); }
         #search-ticker {
             margin-bottom: 12px;
             width: 100%;
@@ -166,32 +176,17 @@
             margin-right: 8px;
             transition: background 0.2s;
         }
-        .btn:hover {
-            background: var(--unime-azzurro);
-            color: var(--unime-blu-scuro);
-        }
-        .btn-danger {
-            background: #e74c3c;
-        }
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-        .btn-success {
-            background: var(--unime-azzurro);
-            color: var(--unime-blu-scuro);
-        }
-        .btn-success:hover {
-            background: var(--unime-blu);
-            color: var(--unime-bianco);
-        }
+        .btn:hover { background: var(--unime-azzurro); color: var(--unime-blu-scuro); }
         .btn-local {
             background: #f5b041;
             color: #fff;
         }
-        .btn-local:hover {
-            background: #d68910;
-            color: #fff;
+        .btn-local:hover { background: #d68910; color: #fff; }
+        .btn-success {
+            background: var(--unime-azzurro);
+            color: var(--unime-blu-scuro);
         }
+        .btn-success:hover { background: var(--unime-blu); color: var(--unime-bianco); }
         .loading {
             text-align: center;
             color: #7f8c8d;
@@ -261,42 +256,47 @@
             ⚠️ I dati sono salvati solo per questa sessione. Chiudendo il browser i dati andranno persi.
         </div>
     </div>
-    <div class="container">
-        <div class="section">
-            <h3>🎯 Seleziona Titoli di Interesse</h3>
-            <div style="margin-bottom: 8px;">
-                <button class="btn btn-local" onclick="selectAllTickers()">Seleziona Tutti</button>
-                <button class="btn btn-local" onclick="deselectAllTickers()">Deseleziona Tutti</button>
+    <div class="main-layout">
+        <div class="col-left">
+            <div class="container">
+                <div class="section">
+                    <h3>🎯 Seleziona Titoli di Interesse</h3>
+                    <div style="margin-bottom: 8px;">
+                        <button class="btn btn-local" onclick="selectAllTickers()">Seleziona Tutti</button>
+                        <button class="btn btn-local" onclick="deselectAllTickers()">Deseleziona Tutti</button>
+                    </div>
+                    <input type="text" id="search-ticker" placeholder="🔍 Cerca ticker o nome azienda...">
+                    <div id="ticker-list" class="ticker-list"></div>
+                </div>
+                <div class="section">
+                    <h3>📰 Ricerca News per Titoli</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label>Giorni indietro: </label>
+                        <select id="days-back">
+                            <option value="1">Ultimo giorno</option>
+                            <option value="3">Ultimi 3 giorni</option>
+                            <option value="7" selected>Ultima settimana</option>
+                            <option value="14">Ultime 2 settimane</option>
+                            <option value="30">Ultimo mese</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success" onclick="searchTickerNews()">🔍 Cerca News</button>
+                    <button class="btn btn-local" onclick="saveNewsLocally()">💾 Salva News Localmente</button>
+                    <div id="search-status"></div>
+                </div>
+                <div class="section" id="search-results-section">
+                    <h3>📊 Risultati News</h3>
+                    <div id="results"></div>
+                </div>
             </div>
-            <input type="text" id="search-ticker" placeholder="🔍 Cerca ticker o nome azienda...">
-            <div id="ticker-list" class="ticker-list"></div>
-            <button class="btn" onclick="updateSelectedTickers()">Aggiorna Selezione</button>
-            <div id="selected-tickers" class="stats"></div>
         </div>
-    </div>
-    <div class="container">
-        <div class="section">
-            <h3>📰 Ricerca News per Titoli</h3>
-            <div style="margin-bottom: 15px;">
-                <label>Giorni indietro: </label>
-                <select id="days-back">
-                    <option value="1">Ultimo giorno</option>
-                    <option value="3">Ultimi 3 giorni</option>
-                    <option value="7" selected>Ultima settimana</option>
-                    <option value="14">Ultime 2 settimane</option>
-                    <option value="30">Ultimo mese</option>
-                </select>
+        <div class="col-right">
+            <h3 style="margin-top:0;">📂 Le mie news salvate</h3>
+            <div style="margin-bottom: 10px;">
+                <button class="btn btn-local" style="width:100%;margin-bottom:8px;" onclick="selectAllTickers();loadLocalNewsForSelected();">Visualizza tutte</button>
+                <button class="btn btn-local" style="width:100%;" onclick="deselectAllTickers();loadLocalNewsForSelected();">Nessun filtro</button>
             </div>
-            <button class="btn btn-success" onclick="searchTickerNews()">🔍 Cerca News</button>
-            <button class="btn btn-local" onclick="saveNewsLocally()">💾 Salva News Localmente</button>
-            <button class="btn btn-local" onclick="loadLocalNewsForSelected()">📂 Visualizza News Salvate</button>
-            <div id="search-status"></div>
-        </div>
-    </div>
-    <div class="container">
-        <div class="section">
-            <h3>📊 Risultati News</h3>
-            <div id="results"></div>
+            <div id="saved-news-sidebar"></div>
         </div>
     </div>
     <script>
@@ -555,6 +555,42 @@
         // Inizializzazione
         loadUserInfo();
         loadSavedNews();
+
+        function renderSavedNewsSidebar() {
+            // Mostra news locali per i ticker selezionati
+            const allNews = [];
+            selectedTickers.forEach(ticker => {
+                const news = JSON.parse(localStorage.getItem('local_news_' + ticker) || '[]');
+                allNews.push(...news);
+            });
+            const sidebar = document.getElementById('saved-news-sidebar');
+            if (allNews.length === 0) {
+                sidebar.innerHTML = '<p class="loading">Nessuna news salvata per i ticker selezionati.</p>';
+                return;
+            }
+            sidebar.innerHTML = `
+                <div style="max-height: 60vh; overflow-y: auto;">
+                ${allNews.map((article, index) => `
+                    <div class="news-item" style="margin-bottom:10px;">
+                        <div class="news-title" style="font-size:15px;">${article.title}</div>
+                        <div class="news-meta">
+                            <span class="ticker-badge">${article.ticker}</span>
+                            <span style="font-size:12px;">${new Date(article.publishedAt).toLocaleString('it-IT')}</span>
+                        </div>
+                        <a href="${article.url}" target="_blank" style="color: #0072c6; font-size:12px;">Leggi articolo</a>
+                    </div>
+                `).join('')}
+                </div>
+            `;
+        }
+
+        // Aggiorna la sidebar ogni volta che cambia la selezione
+        function updateSelectedTickers() {
+            const checkboxes = document.querySelectorAll('.ticker-checkbox:checked');
+            selectedTickers = Array.from(checkboxes).map(cb => cb.value);
+            renderTickerCheckboxes();
+            renderSavedNewsSidebar();
+        }
     </script>
 </body>
 </html> 
