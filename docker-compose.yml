@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./static:/app/static
+    # Se il tuo app.py lancia il server su 0.0.0.0:5000 va bene così
+    # Se serve un comando custom, aggiungi:
+    # command: python app.py 

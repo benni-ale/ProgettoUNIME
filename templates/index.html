@@ -253,6 +253,14 @@
         <div class="col-left">
             <h3 style="margin-top:0;">🎯 Filtri Titoli</h3>
             <div style="margin-bottom: 8px;">
+                <label for="market-slicer"><b>Mercato:</b></label>
+                <select id="market-slicer" onchange="filterByMarket()">
+                    <option value="ALL">Tutti</option>
+                    <option value="ITA">Italia</option>
+                    <option value="USA">USA</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 8px;">
                 <button class="btn btn-local" style="width:48%;" onclick="selectAllTickers()">Seleziona Tutti</button>
                 <button class="btn btn-local" style="width:48%;" onclick="deselectAllTickers()">Deseleziona Tutti</button>
             </div>
@@ -266,16 +274,18 @@
             </div>
             <div id="tab-content-search" class="tab-content">
                 <div style="margin-bottom: 18px;">
-                    <label>Giorni indietro: </label>
-                    <select id="days-back">
-                        <option value="1">Ultimo giorno</option>
-                        <option value="3">Ultimi 3 giorni</option>
-                        <option value="7" selected>Ultima settimana</option>
-                        <option value="14">Ultime 2 settimane</option>
-                        <option value="30">Ultimo mese</option>
-                    </select>
-                    <button class="btn btn-success" onclick="searchTickerNews()">🔍 Cerca News</button>
-                    <button class="btn btn-local" onclick="saveNewsLocally()">💾 Salva News Localmente</button>
+                    <div style="margin-bottom: 8px;">
+                        <label>Giorni indietro: </label>
+                        <select id="days-back">
+                            <option value="1">Ultimo giorno</option>
+                            <option value="3">Ultimi 3 giorni</option>
+                            <option value="7" selected>Ultima settimana</option>
+                            <option value="14">Ultime 2 settimane</option>
+                            <option value="30">Ultimo mese</option>
+                        </select>
+                        <button class="btn btn-success" onclick="searchTickerNews()">🔍 Cerca News</button>
+                        <button class="btn btn-local" onclick="saveNewsLocally()">💾 Salva News Localmente</button>
+                    </div>
                 </div>
                 <div id="search-status"></div>
                 <div id="results"></div>
@@ -291,6 +301,7 @@
         let selectedTickers = [];
         let lastNewsResults = [];
         let currentTab = 'search';
+        let currentMarket = 'ALL';
 
         // Tab switching
         function showTab(tab) {
@@ -345,6 +356,17 @@
             renderTickerCheckboxes();
         });
 
+        function filterByMarket() {
+            currentMarket = document.getElementById('market-slicer').value;
+            if (currentMarket === 'ALL') {
+                filteredTickers = allTickers;
+            } else {
+                filteredTickers = allTickers.filter(t => t.market === currentMarket);
+            }
+            renderTickerCheckboxes();
+            updateSelectedTickers();
+        }
+
         function renderTickerCheckboxes() {
             const listDiv = document.getElementById('ticker-list');
             listDiv.innerHTML = filteredTickers.map(t =>
@@ -374,8 +396,25 @@
             }
 
             const daysBack = document.getElementById('days-back').value;
+            // Determina provider in base al mercato selezionato
+            let provider = 'newsapi';
+            if (currentMarket === 'ITA') {
+                provider = 'ansa'; // o altro provider italiano di default
+            }
             const statusDiv = document.getElementById('search-status');
-            
+
+            // Lista ticker italiani (deve essere coerente con backend)
+            const italianTickers = [
+                'ENEL', 'ENI', 'ISP', 'UCG', 'STM', 'ATL', 'G', 'SRG', 'TEN', 'TRN', 'BMED', 'BAMI', 'MB', 'BMPS', 'BZU', 'CPR', 'DIA', 'F', 'FBK', 'JUVE', 'LDO', 'MONC', 'PIRC', 'PRY', 'RACE', 'REC', 'SFER', 'TIT', 'UNI', 'BZU', 'IGD', 'CASS', 'CARR', 'CNHI', 'EXO', 'FCA', 'FERR', 'FNM', 'IGD', 'INW', 'IP', 'IT', 'LUX', 'MED', 'PST', 'SNA', 'SPM', 'UCG', 'UNI', 'VIV', 'BPE', 'BPSO', 'BPER', 'BPM', 'BAMI', 'BMPS', 'BZU', 'CASS', 'CARR', 'CNHI', 'EXO', 'FCA', 'FERR', 'FNM', 'IGD', 'INW', 'IP', 'IT', 'LUX', 'MED', 'PST', 'SNA', 'SPM', 'UCG', 'UNI', 'VIV'
+            ];
+            if (["ansa", "ilsole24ore", "repubblica", "corriere", "bloomberg_italia"].includes(provider)) {
+                const nonItalian = selectedTickers.filter(t => !italianTickers.includes(t.toUpperCase()));
+                if (nonItalian.length > 0) {
+                    statusDiv.innerHTML = `<div style='color: red; font-weight: bold;'>❌ I provider italiani supportano solo aziende italiane. Seleziona solo ticker italiani come ENEL, ENI, ISP, UCG, STM, ATL, ecc.<br>Per aziende estere usa NewsAPI (Internazionale) come provider.<br><span style='font-size: 0.9em;'>Ticker non supportati: ${nonItalian.join(", ")}</span></div>`;
+                    return;
+                }
+            }
+
             statusDiv.innerHTML = '<div class="loading">🔍 Ricerca news in corso...</div>';
             
             fetch('/search_ticker_news', {
@@ -385,15 +424,18 @@
                 },
                 body: JSON.stringify({
                     tickers: selectedTickers,
-                    days_back: parseInt(daysBack)
+                    days_back: parseInt(daysBack),
+                    provider: provider
                 })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    const providerName = getProviderDisplayName(data.provider);
                     statusDiv.innerHTML = `
                         <div class="stats">
                             ✅ Trovate ${data.total_articles} news per ${selectedTickers.join(', ')}<br>
+                            📰 Provider: ${providerName}<br>
                             💾 Salvate nella sessione: ${data.user_id.substring(0, 8)}...
                         </div>
                     `;
@@ -546,6 +588,19 @@
             selectedTickers = [];
             renderTickerCheckboxes();
             updateSelectedTickers();
+        }
+
+        // Funzione helper per ottenere il nome visualizzato del provider
+        function getProviderDisplayName(provider) {
+            const providerNames = {
+                'newsapi': 'NewsAPI (Internazionale)',
+                'ansa': 'ANSA',
+                'ilsole24ore': 'Il Sole 24 Ore',
+                'repubblica': 'La Repubblica',
+                'corriere': 'Corriere della Sera',
+                'bloomberg_italia': 'Bloomberg Italia'
+            };
+            return providerNames[provider] || provider;
         }
 
         // Inizializzazione
