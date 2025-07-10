@@ -236,6 +236,34 @@
         .sentiment-positive { color: #27ae60; }
         .sentiment-negative { color: #e74c3c; }
         .sentiment-neutral { color: #7f8c8d; }
+        
+        .provider-checkbox-label {
+            display: block;
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .provider-checkbox-label:hover {
+            background: var(--unime-accent);
+        }
+        .provider-checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+        .provider-checkbox-label strong {
+            color: var(--unime-blu);
+        }
+        
+        .provider-badge {
+            background: var(--unime-azzurro);
+            color: var(--unime-blu-scuro);
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -260,6 +288,79 @@
                     <option value="USA">USA</option>
                 </select>
             </div>
+            
+            <!-- Selettore Provider Italiani (visibile solo per mercato italiano) -->
+            <div id="italian-provider-selector" style="margin-bottom: 8px; display: none;">
+                <div style="background: var(--unime-accent); padding: 8px; border-radius: 5px; border-left: 4px solid var(--unime-blu); margin-bottom: 8px;">
+                    <strong>🇮🇹 Mercato Italiano Selezionato</strong><br>
+                    <small>Seleziona uno o più provider per una ricerca completa:</small>
+                </div>
+                
+                <div style="margin-bottom: 8px;">
+                    <label><b>📰 Provider News Italiane:</b></label>
+                    <div style="margin-top: 4px;">
+                        <button class="btn btn-local" style="width:48%; font-size: 12px;" onclick="selectAllItalianProviders()">Seleziona Tutti</button>
+                        <button class="btn btn-local" style="width:48%; font-size: 12px;" onclick="deselectAllItalianProviders()">Deseleziona Tutti</button>
+                    </div>
+                </div>
+                
+                <div id="italian-providers-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--unime-azzurro); padding: 8px; background: var(--unime-bianco); border-radius: 5px;">
+                    <label class="provider-checkbox-label">
+                        <input type="checkbox" class="italian-provider-checkbox" value="ansa" checked onchange="updateSelectedProviders()">
+                        <strong>ANSA</strong> - Agenzia Nazionale Stampa<br>
+                        <small style="color: #666;">News generali e finanziarie italiane</small>
+                    </label>
+                    <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;">
+                    
+                    <label class="provider-checkbox-label">
+                        <input type="checkbox" class="italian-provider-checkbox" value="ilsole24ore" onchange="updateSelectedProviders()">
+                        <strong>Il Sole 24 Ore</strong> - Economia & Finanza<br>
+                        <small style="color: #666;">Analisi finanziarie dettagliate</small>
+                    </label>
+                    <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;">
+                    
+                    <label class="provider-checkbox-label">
+                        <input type="checkbox" class="italian-provider-checkbox" value="repubblica" onchange="updateSelectedProviders()">
+                        <strong>La Repubblica</strong> - News Generali<br>
+                        <small style="color: #666;">Copertura generale del mercato</small>
+                    </label>
+                    <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;">
+                    
+                    <label class="provider-checkbox-label">
+                        <input type="checkbox" class="italian-provider-checkbox" value="corriere" onchange="updateSelectedProviders()">
+                        <strong>Corriere della Sera</strong> - News Nazionali<br>
+                        <small style="color: #666;">Copertura nazionale</small>
+                    </label>
+                    <hr style="margin: 8px 0; border: none; border-top: 1px solid #eee;">
+                    
+                    <label class="provider-checkbox-label">
+                        <input type="checkbox" class="italian-provider-checkbox" value="bloomberg_italia" onchange="updateSelectedProviders()">
+                        <strong>Bloomberg Italia</strong> - Finanza Globale<br>
+                        <small style="color: #666;">Prospettiva internazionale</small>
+                    </label>
+                </div>
+                
+                <div id="selected-providers-info" style="font-size: 12px; color: #666; margin-top: 8px; font-style: italic; background: var(--unime-accent); padding: 6px; border-radius: 3px;">
+                    ✅ Selezionati: ANSA (1/5 provider)
+                </div>
+            </div>
+            
+            <!-- Indicazione Provider per Mercato USA -->
+            <div id="usa-provider-info" style="margin-bottom: 8px; display: none;">
+                <div style="background: var(--unime-accent); padding: 8px; border-radius: 5px; border-left: 4px solid var(--unime-giallo);">
+                    <strong>🇺🇸 Mercato USA Selezionato</strong><br>
+                    <small>Provider: NewsAPI (Internazionale) - News globali in inglese</small>
+                </div>
+            </div>
+            
+            <!-- Indicazione Provider per Mercato Tutti -->
+            <div id="all-provider-info" style="margin-bottom: 8px; display: none;">
+                <div style="background: var(--unime-accent); padding: 8px; border-radius: 5px; border-left: 4px solid var(--unime-azzurro);">
+                    <strong>🌍 Tutti i Mercati Selezionati</strong><br>
+                    <small>Provider: NewsAPI (Internazionale) - News globali multilingua</small>
+                </div>
+            </div>
+            
             <div style="margin-bottom: 8px;">
                 <button class="btn btn-local" style="width:48%;" onclick="selectAllTickers()">Seleziona Tutti</button>
                 <button class="btn btn-local" style="width:48%;" onclick="deselectAllTickers()">Deseleziona Tutti</button>
@@ -358,13 +459,60 @@
 
         function filterByMarket() {
             currentMarket = document.getElementById('market-slicer').value;
+            
+            // Nascondi tutti i selettori provider
+            document.getElementById('italian-provider-selector').style.display = 'none';
+            document.getElementById('usa-provider-info').style.display = 'none';
+            document.getElementById('all-provider-info').style.display = 'none';
+            
             if (currentMarket === 'ALL') {
                 filteredTickers = allTickers;
+                document.getElementById('all-provider-info').style.display = 'block';
             } else {
                 filteredTickers = allTickers.filter(t => t.market === currentMarket);
+                if (currentMarket === 'ITA') {
+                    document.getElementById('italian-provider-selector').style.display = 'block';
+                } else if (currentMarket === 'USA') {
+                    document.getElementById('usa-provider-info').style.display = 'block';
+                }
             }
             renderTickerCheckboxes();
             updateSelectedTickers();
+        }
+
+        // Variabile globale per i provider selezionati
+        let selectedItalianProviders = ['ansa']; // Default: ANSA selezionato
+        
+        function updateSelectedProviders() {
+            const checkboxes = document.querySelectorAll('.italian-provider-checkbox:checked');
+            selectedItalianProviders = Array.from(checkboxes).map(cb => cb.value);
+            
+            const infoDiv = document.getElementById('selected-providers-info');
+            const totalProviders = 5;
+            
+            if (selectedItalianProviders.length === 0) {
+                infoDiv.innerHTML = '⚠️ Nessun provider selezionato - seleziona almeno un provider';
+                infoDiv.style.color = '#e74c3c';
+            } else if (selectedItalianProviders.length === totalProviders) {
+                infoDiv.innerHTML = `✅ Tutti i provider selezionati (${totalProviders}/${totalProviders})`;
+                infoDiv.style.color = '#27ae60';
+            } else {
+                const providerNames = selectedItalianProviders.map(p => getProviderDisplayName(p)).join(', ');
+                infoDiv.innerHTML = `✅ Selezionati: ${providerNames} (${selectedItalianProviders.length}/${totalProviders} provider)`;
+                infoDiv.style.color = '#666';
+            }
+        }
+        
+        function selectAllItalianProviders() {
+            const checkboxes = document.querySelectorAll('.italian-provider-checkbox');
+            checkboxes.forEach(cb => cb.checked = true);
+            updateSelectedProviders();
+        }
+        
+        function deselectAllItalianProviders() {
+            const checkboxes = document.querySelectorAll('.italian-provider-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelectedProviders();
         }
 
         function renderTickerCheckboxes() {
@@ -398,8 +546,14 @@
             const daysBack = document.getElementById('days-back').value;
             // Determina provider in base al mercato selezionato
             let provider = 'newsapi';
+            let providers = [];
+            
             if (currentMarket === 'ITA') {
-                provider = 'ansa'; // o altro provider italiano di default
+                // Usa i provider selezionati dall'utente
+                providers = selectedItalianProviders;
+                provider = selectedItalianProviders[0] || 'newsapi'; // Per compatibilità
+            } else {
+                providers = ['newsapi'];
             }
             const statusDiv = document.getElementById('search-status');
 
@@ -407,12 +561,23 @@
             const italianTickers = [
                 'ENEL', 'ENI', 'ISP', 'UCG', 'STM', 'ATL', 'G', 'SRG', 'TEN', 'TRN', 'BMED', 'BAMI', 'MB', 'BMPS', 'BZU', 'CPR', 'DIA', 'F', 'FBK', 'JUVE', 'LDO', 'MONC', 'PIRC', 'PRY', 'RACE', 'REC', 'SFER', 'TIT', 'UNI', 'BZU', 'IGD', 'CASS', 'CARR', 'CNHI', 'EXO', 'FCA', 'FERR', 'FNM', 'IGD', 'INW', 'IP', 'IT', 'LUX', 'MED', 'PST', 'SNA', 'SPM', 'UCG', 'UNI', 'VIV', 'BPE', 'BPSO', 'BPER', 'BPM', 'BAMI', 'BMPS', 'BZU', 'CASS', 'CARR', 'CNHI', 'EXO', 'FCA', 'FERR', 'FNM', 'IGD', 'INW', 'IP', 'IT', 'LUX', 'MED', 'PST', 'SNA', 'SPM', 'UCG', 'UNI', 'VIV'
             ];
-            if (["ansa", "ilsole24ore", "repubblica", "corriere", "bloomberg_italia"].includes(provider)) {
+            
+            // Controlla se ci sono provider italiani selezionati
+            const italianProviders = ["ansa", "ilsole24ore", "repubblica", "corriere", "bloomberg_italia"];
+            const hasItalianProviders = providers.some(p => italianProviders.includes(p));
+            
+            if (hasItalianProviders) {
                 const nonItalian = selectedTickers.filter(t => !italianTickers.includes(t.toUpperCase()));
                 if (nonItalian.length > 0) {
                     statusDiv.innerHTML = `<div style='color: red; font-weight: bold;'>❌ I provider italiani supportano solo aziende italiane. Seleziona solo ticker italiani come ENEL, ENI, ISP, UCG, STM, ATL, ecc.<br>Per aziende estere usa NewsAPI (Internazionale) come provider.<br><span style='font-size: 0.9em;'>Ticker non supportati: ${nonItalian.join(", ")}</span></div>`;
                     return;
                 }
+            }
+            
+            // Controlla che almeno un provider sia selezionato
+            if (currentMarket === 'ITA' && selectedItalianProviders.length === 0) {
+                statusDiv.innerHTML = `<div style='color: red; font-weight: bold;'>❌ Seleziona almeno un provider italiano prima di cercare news!</div>`;
+                return;
             }
 
             statusDiv.innerHTML = '<div class="loading">🔍 Ricerca news in corso...</div>';
@@ -425,17 +590,31 @@
                 body: JSON.stringify({
                     tickers: selectedTickers,
                     days_back: parseInt(daysBack),
-                    provider: provider
+                    provider: provider,
+                    providers: providers
                 })
             })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    const providerName = getProviderDisplayName(data.provider);
+                    const marketInfo = currentMarket === 'ITA' ? 'Italia' : 
+                                     currentMarket === 'USA' ? 'USA' : 'Internazionale';
+                    
+                    // Gestione provider multipli
+                    let providerInfo = '';
+                    if (data.providers && data.providers.length > 1) {
+                        const providerNames = data.providers.map(p => getProviderDisplayName(p)).join(', ');
+                        providerInfo = `📰 Provider: ${providerNames} (${data.providers.length} provider)`;
+                    } else {
+                        const providerName = getProviderDisplayName(data.provider);
+                        providerInfo = `📰 Provider: ${providerName}`;
+                    }
+                    
                     statusDiv.innerHTML = `
                         <div class="stats">
                             ✅ Trovate ${data.total_articles} news per ${selectedTickers.join(', ')}<br>
-                            📰 Provider: ${providerName}<br>
+                            ${providerInfo}<br>
+                            🎯 Mercato: ${marketInfo}<br>
                             💾 Salvate nella sessione: ${data.user_id.substring(0, 8)}...
                         </div>
                     `;
@@ -508,6 +687,7 @@
                             <span class="ticker-badge">${article.ticker}</span>
                             📅 ${new Date(article.publishedAt).toLocaleString('it-IT')} | 
                             📰 ${article.source} |
+                            ${article.provider ? `<span class="provider-badge">${getProviderDisplayName(article.provider)}</span> |` : ''}
                             <span class="sentiment-${article.sentiment}">${getSentimentIcon(article.sentiment)} ${article.sentiment}</span>
                         </div>
                         <div id="details-${index}" class="news-details">
@@ -606,6 +786,7 @@
         // Inizializzazione
         loadUserInfo();
         loadSavedNews();
+        updateSelectedProviders(); // Inizializza i provider selezionati
 
         function renderSavedNewsSidebar() {
             // Mostra news locali per i ticker selezionati

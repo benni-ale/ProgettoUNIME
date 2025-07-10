@@ -399,12 +399,25 @@ def search_ticker_news():
     tickers = data.get('tickers', [])
     days_back = data.get('days_back', 7)  # Default: ultimi 7 giorni
     provider = data.get('provider', 'newsapi')  # Nuovo parametro
+    providers = data.get('providers', [])  # Nuovo parametro per selezione multipla
 
     if not tickers:
         return jsonify({'error': 'Nessun ticker specificato'}), 400
 
+    # Gestione provider multipli
+    if providers and isinstance(providers, list):
+        # Se sono specificati provider multipli, usa quelli
+        selected_providers = providers
+    elif provider in ITALIAN_NEWS_PROVIDERS:
+        # Se è specificato un singolo provider italiano, usa quello
+        selected_providers = [provider]
+    else:
+        # Default: usa NewsAPI
+        selected_providers = ['newsapi']
+
     # Filtro: provider italiano e ticker non italiano
-    if provider in ITALIAN_NEWS_PROVIDERS:
+    italian_providers_selected = [p for p in selected_providers if p in ITALIAN_NEWS_PROVIDERS]
+    if italian_providers_selected:
         non_italian = [t for t in tickers if t.upper() not in ITALIAN_TICKERS]
         if non_italian:
             return jsonify({
@@ -416,31 +429,33 @@ def search_ticker_news():
 
     all_results = []
     
-    if provider in ITALIAN_NEWS_PROVIDERS:
-        # Usa provider italiano
-        italian_provider = ItalianNewsProvider(provider)
-        
-        for ticker in tickers:
-            try:
-                # Cerca news italiane per il ticker
-                ticker_results = italian_provider.search_news(
-                    f'"{ticker}" OR "{ticker} azioni" OR "{ticker} borsa"', 
-                    days_back, 
-                    max_results=5
-                )
-                
-                # Aggiungi ticker a ogni risultato
-                for result in ticker_results:
-                    result['ticker'] = ticker
-                
-                all_results.extend(ticker_results)
-                
-                # Pausa per evitare rate limiting
-                time.sleep(0.2)
-                
-            except Exception as e:
-                print(f"[DEBUG] Errore nella ricerca news italiane per {ticker}: {e}")
-                continue
+    # Gestione provider italiani multipli
+    if italian_providers_selected:
+        for provider_name in italian_providers_selected:
+            italian_provider = ItalianNewsProvider(provider_name)
+            
+            for ticker in tickers:
+                try:
+                    # Cerca news italiane per il ticker
+                    ticker_results = italian_provider.search_news(
+                        f'"{ticker}" OR "{ticker} azioni" OR "{ticker} borsa"', 
+                        days_back, 
+                        max_results=5
+                    )
+                    
+                    # Aggiungi ticker e provider a ogni risultato
+                    for result in ticker_results:
+                        result['ticker'] = ticker
+                        result['provider'] = provider_name
+                    
+                    all_results.extend(ticker_results)
+                    
+                    # Pausa per evitare rate limiting
+                    time.sleep(0.2)
+                    
+                except Exception as e:
+                    print(f"[DEBUG] Errore nella ricerca news italiane per {ticker} su {provider_name}: {e}")
+                    continue
     else:
         # Usa NewsAPI (logica esistente)
         from datetime import datetime, timedelta
@@ -509,16 +524,17 @@ def search_ticker_news():
             'days_back': days_back,
             'total_articles': len(all_results),
             'articles': all_results,
-            'provider': provider
+            'providers': selected_providers
         })
     
-    print(f"[DEBUG] Totale articoli trovati: {len(all_results)}")
+    print(f"[DEBUG] Totale articoli trovati: {len(all_results)} da {len(selected_providers)} provider")
     return jsonify({
         'success': True,
         'total_articles': len(all_results),
         'articles': all_results,
         'user_id': get_user_id(),
-        'provider': provider
+        'providers': selected_providers,
+        'provider': selected_providers[0] if selected_providers else 'newsapi'  # Per compatibilità
     })
 
 @app.route('/saved_news')
