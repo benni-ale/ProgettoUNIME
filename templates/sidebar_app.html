@@ -531,6 +531,14 @@
         </div>
         <div class="section-content" id="section-saved" style="display:none;">
             <h2>📰 News Salvate</h2>
+            <div style="margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start;">
+                <div style="position:relative; min-width:220px; flex:1;">
+                    <input type="text" id="slicer-title-input" class="search-input" placeholder="🔍 Cerca titolo..." autocomplete="off">
+                    <div id="slicer-title-suggestions" class="ticker-list dropdown" style="position:absolute;top:100%;left:0;right:0;z-index:30;max-height:180px;overflow-y:auto;display:none;"></div>
+                </div>
+                <select id="slicer-source" class="search-input" style="min-width:180px;"></select>
+                <select id="slicer-date" class="search-input" style="min-width:140px;"></select>
+            </div>
             <div id="saved-news-list" class="news-list">
                 <div class="loading">Caricamento news salvate...</div>
             </div>
@@ -563,307 +571,16 @@
         let lastNewsResults = [];
         let currentMarket = 'ALL';
         let selectedItalianProviders = ['ansa']; // Default: ANSA selezionato
-
-        // Inizializza la sezione di ricerca
-        function initializeSearch() {
-            loadTickers();
-            updateSelectedProviders();
+        let allNewsCache = [];
+        function uniqueSorted(arr) {
+            return Array.from(new Set(arr)).sort();
         }
-
-        // Carica la lista dei ticker
-        function loadTickers() {
-            fetch('/tickers')
-                .then(res => res.json())
-                .then(data => {
-                    allTickers = data.sort((a, b) => a.symbol.localeCompare(b.symbol));
-                    filteredTickers = allTickers;
-                    renderTickerCheckboxes();
-                })
-                .catch(err => {
-                    console.error('Errore nel caricamento tickers:', err);
-                    document.getElementById('ticker-list').innerHTML = '<p class="loading">Errore nel caricamento dei ticker</p>';
-                });
+        function onlyDate(str) {
+            if (!str) return '';
+            try {
+                return new Date(str).toISOString().slice(0,10);
+            } catch { return str; }
         }
-        fetch('/tickers')
-            .then(res => res.json())
-            .then(data => {
-                allTickers = data.sort((a, b) => a.symbol.localeCompare(b.symbol));
-                filteredTickers = allTickers;
-                renderTickerCheckboxes();
-            })
-            .catch(err => {
-                console.error('Errore nel caricamento tickers:', err);
-                document.getElementById('ticker-list').innerHTML = '<p class="loading">Errore nel caricamento dei ticker</p>';
-            });
-        // Filtra per mercato
-        function filterByMarket() {
-            currentMarket = document.getElementById('market-slicer').value;
-            
-            // Nascondi tutti i selettori provider
-            document.getElementById('italian-provider-selector').style.display = 'none';
-            document.getElementById('usa-provider-info').style.display = 'none';
-            document.getElementById('all-provider-info').style.display = 'none';
-            
-            if (currentMarket === 'ALL') {
-                filteredTickers = allTickers;
-                document.getElementById('all-provider-info').style.display = 'block';
-            } else {
-                filteredTickers = allTickers.filter(t => t.market === currentMarket);
-                if (currentMarket === 'ITA') {
-                    document.getElementById('italian-provider-selector').style.display = 'block';
-                } else if (currentMarket === 'USA') {
-                    document.getElementById('usa-provider-info').style.display = 'block';
-                }
-            }
-            renderTickerCheckboxes();
-            updateSelectedTickers();
-        }
-
-        // Gestione provider italiani
-        function updateSelectedProviders() {
-            const checkboxes = document.querySelectorAll('.italian-provider-checkbox:checked');
-            selectedItalianProviders = Array.from(checkboxes).map(cb => cb.value);
-            
-            const infoDiv = document.getElementById('selected-providers-info');
-            const totalProviders = 5;
-            
-            if (selectedItalianProviders.length === 0) {
-                infoDiv.innerHTML = '⚠️ Nessun provider selezionato - seleziona almeno un provider';
-                infoDiv.style.color = '#e74c3c';
-            } else if (selectedItalianProviders.length === totalProviders) {
-                infoDiv.innerHTML = `✅ Tutti i provider selezionati (${totalProviders}/${totalProviders})`;
-                infoDiv.style.color = '#27ae60';
-            } else {
-                const providerNames = selectedItalianProviders.map(p => getProviderDisplayName(p)).join(', ');
-                infoDiv.innerHTML = `✅ Selezionati: ${providerNames} (${selectedItalianProviders.length}/${totalProviders} provider)`;
-                infoDiv.style.color = '#666';
-            }
-        }
-        
-        function selectAllItalianProviders() {
-            const checkboxes = document.querySelectorAll('.italian-provider-checkbox');
-            checkboxes.forEach(cb => cb.checked = true);
-            updateSelectedProviders();
-        }
-        
-        function deselectAllItalianProviders() {
-            const checkboxes = document.querySelectorAll('.italian-provider-checkbox');
-            checkboxes.forEach(cb => cb.checked = false);
-            updateSelectedProviders();
-        }
-
-        // Gestione ticker
-        function renderTickerCheckboxes() {
-            const listDiv = document.getElementById('ticker-list');
-            if (filteredTickers.length === 0) {
-                listDiv.innerHTML = '<div style="padding:8px; color:var(--cyber-accent2);">Nessun risultato</div>';
-                return;
-            }
-            listDiv.innerHTML = filteredTickers.map(t =>
-                `<label class='ticker-label'><input type='checkbox' class='ticker-checkbox' value='${t.symbol}' ${selectedTickers.includes(t.symbol) ? 'checked' : ''} onchange='updateSelectedTickers()'>${t.symbol} - ${t.name}</label>`
-            ).join('<br>');
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('search-ticker');
-            renderTickerCheckboxes();
-            searchInput.addEventListener('input', function() {
-                const val = this.value.toLowerCase();
-                filteredTickers = allTickers.filter(t =>
-                    t.symbol.toLowerCase().includes(val) ||
-                    t.name.toLowerCase().includes(val)
-                );
-                renderTickerCheckboxes();
-            });
-        });
-
-        function updateSelectedTickers() {
-            const checkboxes = document.querySelectorAll('.ticker-checkbox:checked');
-            selectedTickers = Array.from(checkboxes).map(cb => cb.value);
-        }
-
-        function selectAllTickers() {
-            selectedTickers = filteredTickers.map(t => t.symbol);
-            renderTickerCheckboxes();
-            updateSelectedTickers();
-        }
-
-        function deselectAllTickers() {
-            selectedTickers = [];
-            renderTickerCheckboxes();
-            updateSelectedTickers();
-        }
-
-        // Ricerca news
-        function searchTickerNews() {
-            if (selectedTickers.length === 0) {
-                alert('Seleziona almeno un ticker prima di cercare news!');
-                return;
-            }
-
-            const daysBack = document.getElementById('days-back').value;
-            let provider = 'newsapi';
-            let providers = [];
-            
-            if (currentMarket === 'ITA') {
-                providers = selectedItalianProviders;
-                provider = selectedItalianProviders[0] || 'newsapi';
-            } else {
-                providers = ['newsapi'];
-            }
-            
-            const statusDiv = document.getElementById('search-status');
-
-            // Lista ticker italiani
-            const italianTickers = [
-                'ENEL', 'ENI', 'ISP', 'UCG', 'STM', 'ATL', 'G', 'SRG', 'TEN', 'TRN', 'BMED', 'BAMI', 'MB', 'BMPS', 'BZU', 'CPR', 'DIA', 'F', 'FBK', 'JUVE', 'LDO', 'MONC', 'PIRC', 'PRY', 'RACE', 'REC', 'SFER', 'TIT', 'UNI', 'BZU', 'IGD', 'CASS', 'CARR', 'CNHI', 'EXO', 'FCA', 'FERR', 'FNM', 'IGD', 'INW', 'IP', 'IT', 'LUX', 'MED', 'PST', 'SNA', 'SPM', 'UCG', 'UNI', 'VIV', 'BPE', 'BPSO', 'BPER', 'BPM', 'BAMI', 'BMPS', 'BZU', 'CASS', 'CARR', 'CNHI', 'EXO', 'FCA', 'FERR', 'FNM', 'IGD', 'INW', 'IP', 'IT', 'LUX', 'MED', 'PST', 'SNA', 'SPM', 'UCG', 'UNI', 'VIV'
-            ];
-            
-            const italianProviders = ["ansa", "ilsole24ore", "repubblica", "corriere", "bloomberg_italia"];
-            const hasItalianProviders = providers.some(p => italianProviders.includes(p));
-            
-            if (hasItalianProviders) {
-                const nonItalian = selectedTickers.filter(t => !italianTickers.includes(t.toUpperCase()));
-                if (nonItalian.length > 0) {
-                    statusDiv.innerHTML = `<div class="error">❌ I provider italiani supportano solo aziende italiane. Seleziona solo ticker italiani come ENEL, ENI, ISP, UCG, STM, ATL, ecc.<br>Per aziende estere usa NewsAPI (Internazionale) come provider.<br><span style='font-size: 0.9em;'>Ticker non supportati: ${nonItalian.join(", ")}</span></div>`;
-                    return;
-                }
-            }
-            
-            if (currentMarket === 'ITA' && selectedItalianProviders.length === 0) {
-                statusDiv.innerHTML = `<div class="error">❌ Seleziona almeno un provider italiano prima di cercare news!</div>`;
-                return;
-            }
-
-            statusDiv.innerHTML = '<div class="loading">🔍 Ricerca news in corso...</div>';
-            
-            fetch('/search_ticker_news', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    tickers: selectedTickers,
-                    days_back: parseInt(daysBack),
-                    provider: provider,
-                    providers: providers
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const marketInfo = currentMarket === 'ITA' ? 'Italia' : 
-                                     currentMarket === 'USA' ? 'USA' : 'Internazionale';
-                    
-                    let providerInfo = '';
-                    if (data.providers && data.providers.length > 1) {
-                        const providerNames = data.providers.map(p => getProviderDisplayName(p)).join(', ');
-                        providerInfo = `📰 Provider: ${providerNames} (${data.providers.length} provider)`;
-                    } else {
-                        const providerName = getProviderDisplayName(data.provider);
-                        providerInfo = `📰 Provider: ${providerName}`;
-                    }
-                    
-                    statusDiv.innerHTML = `
-                        <div class="success">
-                            ✅ Trovate ${data.total_articles} news per ${selectedTickers.join(', ')}<br>
-                            ${providerInfo}<br>
-                            🎯 Mercato: ${marketInfo}<br>
-                            💾 Salvate nella sessione: ${data.user_id.substring(0, 8)}...
-                        </div>
-                    `;
-                    displaySearchResults(data.articles);
-                    lastNewsResults = data.articles;
-                } else {
-                    statusDiv.innerHTML = `<div class="error">❌ Errore: ${data.error}</div>`;
-                }
-            })
-            .catch(err => {
-                statusDiv.innerHTML = `<div class="error">❌ Errore di rete: ${err.message}</div>`;
-            });
-        }
-
-        // Visualizza risultati ricerca
-        function displaySearchResults(articles) {
-            const resultsDiv = document.getElementById('search-results');
-            if (articles.length === 0) {
-                resultsDiv.innerHTML = '<p class="loading">Nessuna news trovata</p>';
-                return;
-            }
-            resultsDiv.innerHTML = `
-                <h3>Risultati Ricerca (${articles.length} articoli)</h3>
-                ${articles.map((article, index) => `
-                    <div class="news-card">
-                        <div class="news-title" onclick="toggleSearchDetails(${index})">
-                            📰 ${article.title}
-                        </div>
-                        <div class="news-meta">
-                            <span class="ticker-badge">${article.ticker}</span>
-                            📅 ${formatDate(article.publishedAt)} | 
-                            📰 ${article.source} |
-                            ${article.provider ? `<span class="provider-badge">${getProviderDisplayName(article.provider)}</span> |` : ''}
-                            <span class="sentiment-${article.sentiment}">${getSentimentIcon(article.sentiment)} ${article.sentiment}</span>
-                        </div>
-                        <div id="search-details-${index}" class="news-details" style="display:none;">
-                            <p><strong>Descrizione:</strong> ${article.description || 'N/A'}</p>
-                            <p><strong>Contenuto:</strong> ${article.text || 'N/A'}</p>
-                            <p><a href="${article.url}" target="_blank" style="color: var(--cyber-accent1);">🔗 Leggi articolo completo</a></p>
-                        </div>
-                    </div>
-                `).join('')}
-            `;
-        }
-
-        function toggleSearchDetails(index) {
-            const details = document.getElementById(`search-details-${index}`);
-            details.style.display = details.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Salva news localmente
-        function saveNewsLocally() {
-            if (!lastNewsResults || lastNewsResults.length === 0) {
-                alert('Nessuna news da salvare!');
-                return;
-            }
-            
-            selectedTickers.forEach(ticker => {
-                const newNews = lastNewsResults.filter(news => news.ticker === ticker);
-                if (newNews.length === 0) return;
-                
-                const existing = JSON.parse(localStorage.getItem('local_news_' + ticker) || '[]');
-                const all = [...existing];
-                newNews.forEach(news => {
-                    if (!all.some(n => n.url === news.url)) {
-                        all.push(news);
-                    }
-                });
-                localStorage.setItem('local_news_' + ticker, JSON.stringify(all));
-            });
-            alert('News aggiunte localmente per ogni ticker selezionato!');
-        }
-
-        // Funzioni helper
-        function getProviderDisplayName(provider) {
-            const providerNames = {
-                'newsapi': 'NewsAPI (Internazionale)',
-                'ansa': 'ANSA',
-                'ilsole24ore': 'Il Sole 24 Ore',
-                'repubblica': 'La Repubblica',
-                'corriere': 'Corriere della Sera',
-                'bloomberg_italia': 'Bloomberg Italia'
-            };
-            return providerNames[provider] || provider;
-        }
-
-        function getSentimentIcon(sentiment) {
-            switch(sentiment) {
-                case 'positive': return '📈';
-                case 'negative': return '📉';
-                default: return '➡️';
-            }
-        }
-
-        // Carica news salvate per la sezione "News Salvate"
         async function loadSavedNewsList() {
             const container = document.getElementById('saved-news-list');
             container.innerHTML = '<div class="loading">Caricamento news salvate...</div>';
@@ -875,18 +592,9 @@
                     data.news.forEach(search => {
                         if(search.articles) allNews.push(...search.articles);
                     });
-                    if(allNews.length === 0) {
-                        container.innerHTML = '<div class="loading">Nessuna news salvata trovata.</div>';
-                        return;
-                    }
-                    container.innerHTML = allNews.map(news => `
-                        <div class="news-card">
-                            <div class="news-title">${news.title || 'Titolo non disponibile'}</div>
-                            <div class="news-meta">${news.source || 'Fonte sconosciuta'} | ${formatDate(news.publishedAt)}</div>
-                            <div class="news-text">${news.text || news.description || 'Contenuto non disponibile'}</div>
-                            <a href="${news.url}" target="_blank" class="btn">Leggi Articolo</a>
-                        </div>
-                    `).join('');
+                    allNewsCache = allNews;
+                    populateSlicers(allNews);
+                    renderSavedNewsList(allNews);
                 } else {
                     container.innerHTML = '<div class="loading">Nessuna news salvata trovata.</div>';
                 }
@@ -894,6 +602,94 @@
                 container.innerHTML = '<div class="error">Errore nel caricamento delle news: ' + error.message + '</div>';
             }
         }
+        function populateSlicers(newsList) {
+            // Titoli suggeriti per autocomplete
+            window.slicerTitleSuggestions = uniqueSorted(newsList.map(n => n.title || 'Titolo non disponibile'));
+            // Source
+            const sourceSel = document.getElementById('slicer-source');
+            const sources = uniqueSorted(newsList.map(n => n.source || 'Fonte sconosciuta'));
+            sourceSel.innerHTML = `<option value="">Tutte le fonti</option>` + sources.map(s => `<option value="${s}">${s}</option>`).join('');
+            // Date (solo giorno)
+            const dateSel = document.getElementById('slicer-date');
+            const dates = uniqueSorted(newsList.map(n => n.publishedAt ? onlyDate(n.publishedAt) : 'Data non disponibile'));
+            dateSel.innerHTML = `<option value="">Tutte le date</option>` + dates.map(d => `<option value="${d}">${d}</option>`).join('');
+        }
+        function getSlicerFilters() {
+            return {
+                title: document.getElementById('slicer-title-input').value,
+                source: document.getElementById('slicer-source').value,
+                date: document.getElementById('slicer-date').value
+            };
+        }
+        function renderSavedNewsList(newsList) {
+            const container = document.getElementById('saved-news-list');
+            if(newsList.length === 0) {
+                container.innerHTML = '<div class="loading">Nessuna news trovata.</div>';
+                return;
+            }
+            container.innerHTML = newsList.map(news => `
+                <div class="news-card">
+                    <div class="news-title">${news.title || 'Titolo non disponibile'}</div>
+                    <div class="news-meta">${news.source || 'Fonte sconosciuta'} | ${onlyDate(news.publishedAt)}</div>
+                    <div class="news-text">${news.text || news.description || 'Contenuto non disponibile'}</div>
+                    <a href="${news.url}" target="_blank" class="btn">Leggi Articolo</a>
+                </div>
+            `).join('');
+        }
+        function applySlicerFilters() {
+            const { title, source, date } = getSlicerFilters();
+            const filtered = allNewsCache.filter(news =>
+                (title === '' || (news.title && news.title.toLowerCase().includes(title.toLowerCase()))) &&
+                (source === '' || (news.source || 'Fonte sconosciuta') === source) &&
+                (date === '' || (news.publishedAt ? onlyDate(news.publishedAt) : 'Data non disponibile') === date)
+            );
+            renderSavedNewsList(filtered);
+        }
+        // Autocomplete suggerimenti titolo
+        function showTitleSuggestions(val) {
+            const suggDiv = document.getElementById('slicer-title-suggestions');
+            if (!val) { suggDiv.style.display = 'none'; suggDiv.innerHTML = ''; return; }
+            const suggestions = window.slicerTitleSuggestions.filter(t => t.toLowerCase().includes(val.toLowerCase()));
+            if (suggestions.length === 0) { suggDiv.style.display = 'none'; suggDiv.innerHTML = ''; return; }
+            suggDiv.innerHTML = suggestions.map(t => `<div class='ticker-label' style='cursor:pointer;' data-title="${t.replace(/"/g,'&quot;')}">${t}</div>`).join('');
+            suggDiv.style.display = 'block';
+        }
+        function selectTitleSuggestion(val) {
+            document.getElementById('slicer-title-input').value = val;
+            document.getElementById('slicer-title-suggestions').style.display = 'none';
+            applySlicerFilters();
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            // Slicer fonte/data
+            ['slicer-source','slicer-date'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', applySlicerFilters);
+            });
+            // Barra ricerca titolo con suggerimenti
+            const titleInput = document.getElementById('slicer-title-input');
+            const suggDiv = document.getElementById('slicer-title-suggestions');
+            if (titleInput) {
+                titleInput.addEventListener('input', function() {
+                    showTitleSuggestions(this.value);
+                    applySlicerFilters();
+                });
+                titleInput.addEventListener('focus', function() {
+                    showTitleSuggestions(this.value);
+                });
+                // Selezione suggerimento (mousedown/click)
+                suggDiv.addEventListener('mousedown', function(e) {
+                    if (e.target && e.target.dataset && e.target.dataset.title) {
+                        selectTitleSuggestion(e.target.dataset.title);
+                    }
+                });
+                // Nascondi suggerimenti se clicchi fuori
+                document.addEventListener('mousedown', function(e) {
+                    if (!titleInput.contains(e.target) && !suggDiv.contains(e.target)) {
+                        suggDiv.style.display = 'none';
+                    }
+                });
+            }
+        });
 
         // Carica news salvate per la sezione "Analizza"
         async function loadAnalyzeNewsList() {
