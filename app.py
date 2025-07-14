@@ -10,6 +10,9 @@ import uuid
 import feedparser
 from bs4 import BeautifulSoup
 import re
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+import numpy as np
 
 app = Flask(__name__)
 
@@ -22,6 +25,80 @@ newsapi = NewsApiClient(api_key=NEWSAPI_KEY)
 
 # Chiave Financial Modeling Prep
 FMP_KEY = os.environ.get('FMP_KEY', 'qhgcRYfdz29EYiZXwLnKhugVrTYS0s0z')
+
+# Inizializzazione FinBERT per sentiment analysis
+FINBERT_MODEL = None
+FINBERT_TOKENIZER = None
+
+def load_finbert_model():
+    """Carica il modello FinBERT per sentiment analysis"""
+    global FINBERT_MODEL, FINBERT_TOKENIZER
+    try:
+        if FINBERT_MODEL is None:
+            print("Caricamento modello FinBERT...")
+            model_name = "ProsusAI/finbert"
+            FINBERT_TOKENIZER = AutoTokenizer.from_pretrained(model_name)
+            FINBERT_MODEL = AutoModelForSequenceClassification.from_pretrained(model_name)
+            print("Modello FinBERT caricato con successo!")
+        return True
+    except Exception as e:
+        print(f"Errore nel caricamento del modello FinBERT: {e}")
+        return False
+
+def analyze_sentiment(text, max_length=512):
+    """Analizza il sentiment di un testo usando FinBERT"""
+    try:
+        if not load_finbert_model():
+            return {'sentiment': 'neutral', 'confidence': 0.0, 'error': 'Modello non disponibile'}
+        
+        # Preprocessing del testo
+        if not text or len(text.strip()) < 10:
+            return {'sentiment': 'neutral', 'confidence': 0.0, 'error': 'Testo troppo corto'}
+        
+        # Tronca il testo se troppo lungo
+        text = text[:max_length] if len(text) > max_length else text
+        
+        # Tokenizzazione
+        inputs = FINBERT_TOKENIZER(text, return_tensors="pt", truncation=True, max_length=max_length)
+        
+        # Predizione
+        with torch.no_grad():
+            outputs = FINBERT_MODEL(**inputs)
+            predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        
+        # Mappatura delle classi FinBERT
+        sentiment_labels = ['negative', 'neutral', 'positive']
+        predicted_class = torch.argmax(predictions, dim=1).item()
+        confidence = predictions[0][predicted_class].item()
+        
+        return {
+            'sentiment': sentiment_labels[predicted_class],
+            'confidence': round(confidence, 3),
+            'scores': {
+                'negative': round(predictions[0][0].item(), 3),
+                'neutral': round(predictions[0][1].item(), 3),
+                'positive': round(predictions[0][2].item(), 3)
+            }
+        }
+        
+    except Exception as e:
+        print(f"Errore nell'analisi del sentiment: {e}")
+        return {'sentiment': 'neutral', 'confidence': 0.0, 'error': str(e)}
+
+def analyze_news_sentiment(news_data):
+    """Analizza il sentiment di una lista di news"""
+    results = []
+    for news in news_data:
+        # Combina titolo e testo per l'analisi
+        text_for_analysis = f"{news.get('title', '')} {news.get('text', '')}"
+        sentiment_result = analyze_sentiment(text_for_analysis)
+        
+        # Aggiungi il risultato dell'analisi alla news
+        news_with_sentiment = news.copy()
+        news_with_sentiment['sentiment_analysis'] = sentiment_result
+        results.append(news_with_sentiment)
+    
+    return results
 
 # Provider di news italiane
 ITALIAN_NEWS_PROVIDERS = {
@@ -334,7 +411,18 @@ def save_user_news(news_data):
 
 @app.route('/')
 def home():
+    """Pagina principale dell'applicazione"""
     return render_template('index.html')
+
+@app.route('/saved_news_page')
+def saved_news_page():
+    """Pagina per gestire le news salvate con sentiment analysis"""
+    return render_template('saved_news.html')
+
+@app.route('/dashboard')
+def dashboard():
+    """Dashboard con sidebar stile Azure Data Factory"""
+    return render_template('sidebar_app.html')
 
 @app.route('/tickers')
 def tickers():
@@ -570,6 +658,155 @@ def user_info():
         'total_searches': len(user_news),
         'session_active': True
     })
+
+@app.route('/analyze_sentiment', methods=['POST'])
+def analyze_sentiment_route():
+    """Analizza il sentiment di una singola news"""
+    try:
+        data = request.json
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({'error': 'Testo non fornito'}), 400
+        
+        result = analyze_sentiment(text)
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/analyze_saved_news_sentiment', methods=['POST'])
+def analyze_saved_news_sentiment():
+    """Analizza il sentiment di tutte le news salvate"""
+    try:
+        user_news = get_user_news()
+        
+        if not user_news:
+            return jsonify({'error': 'Nessuna news salvata trovata'}), 404
+        
+        # Analizza il sentiment di tutte le news salvate
+        all_articles = []
+        for search in user_news:
+            if 'articles' in search:
+                all_articles.extend(search['articles'])
+        
+        if not all_articles:
+            return jsonify({'error': 'Nessun articolo trovato nelle news salvate'}), 404
+        
+        # Analizza il sentiment
+        articles_with_sentiment = analyze_news_sentiment(all_articles)
+        
+        # Aggiorna le news salvate con i risultati del sentiment
+        for i, search in enumerate(user_news):
+            if 'articles' in search:
+                for j, article in enumerate(search['articles']):
+                    # Trova l'articolo corrispondente con sentiment
+                    for sentiment_article in articles_with_sentiment:
+                        if (sentiment_article.get('title') == article.get('title') and 
+                            sentiment_article.get('url') == article.get('url')):
+                            user_news[i]['articles'][j]['sentiment_analysis'] = sentiment_article.get('sentiment_analysis', {})
+                            break
+        
+        # Salva le news aggiornate
+        session['saved_news'] = user_news
+        session.modified = True
+        
+        # Calcola statistiche
+        sentiment_stats = {
+            'positive': 0,
+            'neutral': 0,
+            'negative': 0,
+            'total': len(articles_with_sentiment)
+        }
+        
+        for article in articles_with_sentiment:
+            sentiment = article.get('sentiment_analysis', {}).get('sentiment', 'neutral')
+            sentiment_stats[sentiment] += 1
+        
+        return jsonify({
+            'success': True,
+            'message': f'Analisi sentiment completata per {len(articles_with_sentiment)} articoli',
+            'statistics': sentiment_stats,
+            'articles_analyzed': len(articles_with_sentiment),
+            'user_id': get_user_id()
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_sentiment_statistics')
+def get_sentiment_statistics():
+    """Restituisce statistiche del sentiment per le news salvate"""
+    try:
+        user_news = get_user_news()
+        
+        if not user_news:
+            return jsonify({
+                'statistics': {'positive': 0, 'neutral': 0, 'negative': 0, 'total': 0},
+                'message': 'Nessuna news salvata'
+            })
+        
+        # Raccogli tutti gli articoli
+        all_articles = []
+        for search in user_news:
+            if 'articles' in search:
+                all_articles.extend(search['articles'])
+        
+        # Calcola statistiche
+        sentiment_stats = {
+            'positive': 0,
+            'neutral': 0,
+            'negative': 0,
+            'total': len(all_articles)
+        }
+        
+        for article in all_articles:
+            sentiment_analysis = article.get('sentiment_analysis', {})
+            sentiment = sentiment_analysis.get('sentiment', 'neutral')
+            sentiment_stats[sentiment] += 1
+        
+        return jsonify({
+            'statistics': sentiment_stats,
+            'total_articles': len(all_articles),
+            'user_id': get_user_id()
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/filter_news_by_sentiment', methods=['POST'])
+def filter_news_by_sentiment():
+    """Filtra le news salvate per sentiment"""
+    try:
+        data = request.json
+        sentiment_filter = data.get('sentiment', 'all')  # 'positive', 'neutral', 'negative', 'all'
+        
+        user_news = get_user_news()
+        
+        if not user_news:
+            return jsonify({'error': 'Nessuna news salvata trovata'}), 404
+        
+        filtered_articles = []
+        
+        for search in user_news:
+            if 'articles' in search:
+                for article in search['articles']:
+                    sentiment_analysis = article.get('sentiment_analysis', {})
+                    sentiment = sentiment_analysis.get('sentiment', 'neutral')
+                    
+                    if sentiment_filter == 'all' or sentiment == sentiment_filter:
+                        filtered_articles.append(article)
+        
+        return jsonify({
+            'success': True,
+            'filtered_articles': filtered_articles,
+            'total_filtered': len(filtered_articles),
+            'sentiment_filter': sentiment_filter,
+            'user_id': get_user_id()
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

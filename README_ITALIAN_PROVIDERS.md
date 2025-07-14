@@ -34,6 +34,26 @@ Questa applicazione ora supporta provider di news italiane per ottenere informaz
 - **RSS Feed**: https://feeds.bloomberg.com/markets/news.rss
 - **Ideale per**: News internazionali su aziende italiane
 
+## 🧠 Sentiment Analysis con FinBERT
+
+### **Nuove Funzionalità**
+
+L'applicazione ora include **sentiment analysis automatica** utilizzando il modello **FinBERT** di ProsusAI, specializzato nell'analisi del sentiment di testi finanziari.
+
+#### **Caratteristiche:**
+- ✅ **Analisi Automatica**: Ogni news salvata viene automaticamente analizzata
+- ✅ **Classificazione a 3 livelli**: Positive, Neutral, Negative
+- ✅ **Score di confidenza**: Percentuale di accuratezza della predizione
+- ✅ **Score dettagliati**: Distribuzione delle probabilità per ogni classe
+- ✅ **Filtri intelligenti**: Filtra news per sentiment
+- ✅ **Statistiche aggregate**: Dashboard con metriche sentiment
+
+#### **Interfaccia Dedicata:**
+- 📊 **Dashboard Sentiment**: Pagina dedicata per gestire news salvate
+- 📈 **Statistiche in tempo reale**: Conteggi per ogni tipo di sentiment
+- 🔍 **Filtri avanzati**: Filtra per sentiment, fonte, data
+- 📋 **Visualizzazione dettagliata**: Mostra score e confidenza per ogni news
+
 ## 🚀 Come Utilizzare
 
 ### 1. **Avvia l'Applicazione**
@@ -47,7 +67,16 @@ python app.py
 - Scegli il provider italiano dal menu a tendina
 - Clicca "🔍 Cerca News"
 
-### 3. **Esempio di Ricerca**
+### 3. **Gestione News Salvate con Sentiment Analysis**
+- Clicca su "News Salvate" nella barra delle tab
+- Clicca "📊 Gestione News Salvate & Sentiment Analysis"
+- Utilizza i controlli per:
+  - 🔍 Analizzare sentiment di tutte le news
+  - 📊 Visualizzare statistiche
+  - 🔍 Filtrare per sentiment
+  - 🗑️ Cancellare news
+
+### 4. **Esempio di Ricerca**
 ```javascript
 // Ricerca news su ENEL da ANSA
 fetch('/search_ticker_news', {
@@ -61,19 +90,24 @@ fetch('/search_ticker_news', {
 })
 ```
 
-## 🧪 Test dei Provider
+## 🧪 Test delle Funzionalità
 
-Esegui il test automatico per verificare il funzionamento:
-
+### **Test Sentiment Analysis**
 ```bash
-python test_italian_providers.py
+python test_sentiment.py
 ```
 
 Il test verificherà:
 - ✅ Connessione al server
-- ✅ Disponibilità dei provider
-- ✅ Ricerca news per ogni provider
-- ✅ Estrazione contenuto completo
+- ✅ Analisi sentiment singola
+- ✅ Statistiche sentiment
+- ✅ Analisi sentiment news salvate
+- ✅ Filtri per sentiment
+
+### **Test Provider Italiani**
+```bash
+python test_italian_providers.py
+```
 
 ## 📊 Vantaggi dei Provider Italiani
 
@@ -86,14 +120,16 @@ Il test verificherà:
 | **Contenuto** | Dettagliato e contestualizzato | Generico |
 | **Aggiornamenti** | Real-time | Con delay |
 | **Costi** | Gratuito (RSS) | A pagamento |
+| **Sentiment Analysis** | ✅ FinBERT automatico | ❌ Non disponibile |
 
 ### **Casi d'Uso Ideali**
 
-#### **Provider Italiani**
-- 📈 Analisi di mercato italiano
+#### **Provider Italiani + Sentiment Analysis**
+- 📈 Analisi di mercato italiano con sentiment
 - 🏢 Due diligence su aziende italiane
-- 📰 Monitoraggio media locali
+- 📰 Monitoraggio media locali con analisi emozionale
 - 🎓 Ricerca accademica su economia italiana
+- 📊 Dashboard sentiment per investitori
 
 #### **NewsAPI**
 - 🌍 Analisi globale
@@ -129,6 +165,19 @@ def _search_nuovo_provider(self, query, days_back, max_results):
 <option value="nuovo_provider">Nome Provider</option>
 ```
 
+### **Personalizzazione Sentiment Analysis**
+
+Il modello FinBERT può essere personalizzato:
+
+```python
+# Modifica parametri di analisi
+def analyze_sentiment(text, max_length=512):
+    # Personalizza lunghezza massima testo
+    # Modifica soglie di confidenza
+    # Aggiungi preprocessing specifico
+    pass
+```
+
 ### **Personalizzazione Query**
 
 Ogni provider può avere query personalizzate:
@@ -148,27 +197,31 @@ query = f'"{ticker}" OR "{ticker} stock" OR "{ticker} shares"'
 
 ### **Aziende Italiane Popolari**
 
-| Ticker | Nome | Provider Consigliato |
-|--------|------|---------------------|
-| `ENEL` | Enel | ANSA, Il Sole 24 Ore |
-| `ENI` | Eni | Il Sole 24 Ore, Bloomberg |
-| `TIM` | Telecom Italia | La Repubblica, Corriere |
-| `UCG` | UniCredit | Il Sole 24 Ore, Bloomberg |
-| `RACE` | Ferrari | Bloomberg, ANSA |
-| `ISP` | Intesa Sanpaolo | Il Sole 24 Ore, ANSA |
+| Ticker | Nome | Provider Consigliato | Sentiment Tipico |
+|--------|------|---------------------|------------------|
+| `ENEL` | Enel | ANSA, Il Sole 24 Ore | Variabile |
+| `ENI` | Eni | Il Sole 24 Ore, Bloomberg | Positivo/Negativo |
+| `TIM` | Telecom Italia | La Repubblica, Corriere | Neutrale/Negativo |
+| `UCG` | UniCredit | Il Sole 24 Ore, Bloomberg | Positivo/Negativo |
+| `RACE` | Ferrari | Bloomberg, ANSA | Positivo |
+| `ISP` | Intesa Sanpaolo | Il Sole 24 Ore, ANSA | Neutrale |
 
 ### **Query di Esempio**
 
 ```bash
-# News su ENEL da ANSA
+# News su ENEL da ANSA con sentiment analysis
 curl -X POST http://localhost:5000/search_ticker_news \
   -H "Content-Type: application/json" \
   -d '{"tickers":["ENEL"],"provider":"ansa","days_back":7}'
 
-# News su ENI da Il Sole 24 Ore
-curl -X POST http://localhost:5000/search_ticker_news \
+# Analisi sentiment news salvate
+curl -X POST http://localhost:5000/analyze_saved_news_sentiment \
+  -H "Content-Type: application/json"
+
+# Filtra news positive
+curl -X POST http://localhost:5000/filter_news_by_sentiment \
   -H "Content-Type: application/json" \
-  -d '{"tickers":["ENI"],"provider":"ilsole24ore","days_back":3}'
+  -d '{"sentiment":"positive"}'
 ```
 
 ## 🛠️ Risoluzione Problemi
@@ -189,12 +242,18 @@ curl -X POST http://localhost:5000/search_ticker_news \
    - Il sito potrebbe aver cambiato struttura
    - Usa fallback ai metadati RSS
 
+4. **"Errore sentiment analysis"**
+   - Verifica connessione internet (download modello)
+   - Controlla spazio disco (modello ~500MB)
+   - Riavvia applicazione
+
 ### **Debug**
 
 Abilita debug nel codice:
 ```python
 print(f"[DEBUG] Query: {query}")
 print(f"[DEBUG] Risultati: {len(results)}")
+print(f"[DEBUG] Sentiment: {sentiment_result}")
 ```
 
 ## 📝 Note Tecniche
@@ -203,6 +262,8 @@ print(f"[DEBUG] Risultati: {len(results)}")
 - **Fallback**: Se parsing fallisce, usa metadati RSS
 - **Caching**: Risultati salvati in sessione utente
 - **Estrazione**: Usa `newspaper3k` per contenuto completo
+- **Sentiment Analysis**: Usa `transformers` e `torch` per FinBERT
+- **Modello**: Download automatico di ~500MB al primo utilizzo
 
 ## 🔮 Sviluppi Futuri
 
@@ -210,4 +271,7 @@ print(f"[DEBUG] Risultati: {len(results)}")
 - [ ] Più provider italiani (Milano Finanza, MF, etc.)
 - [ ] Filtri per categoria news
 - [ ] Notifiche real-time
-- [ ] Export dati in Excel/CSV 
+- [ ] Export dati in Excel/CSV
+- [ ] Dashboard sentiment avanzata
+- [ ] Alert sentiment personalizzati
+- [ ] Analisi trend sentiment nel tempo 

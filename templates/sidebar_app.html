@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dollarpunk - Gestione News</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyber-bg: #181c24;
+            --cyber-panel: #232a34;
+            --cyber-accent1: #00bfff;
+            --cyber-accent2: #00ffe7;
+            --cyber-accent3: #ffe600;
+            --cyber-accent4: #00ff44;
+            --cyber-white: #f4f8fb;
+            --cyber-dark: #10141a;
+            --cyber-glow: 0 0 8px var(--cyber-accent1);
+            --sentiment-positive: #00ff44;
+            --sentiment-neutral: #ffe600;
+            --sentiment-negative: #ff4444;
+        }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: 'Roboto Mono', 'Arial', sans-serif;
+            background: var(--cyber-bg);
+            color: var(--cyber-white);
+            min-height: 100vh;
+            display: flex;
+        }
+        .sidebar {
+            width: 80px;
+            background: var(--cyber-panel);
+            border-right: 2px solid var(--cyber-accent1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            box-shadow: 2px 0 12px #0e1621;
+            z-index: 10;
+        }
+        .sidebar-btn {
+            width: 56px;
+            height: 56px;
+            margin: 12px 0;
+            background: none;
+            border: none;
+            color: var(--cyber-accent1);
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        .sidebar-btn.active, .sidebar-btn:hover {
+            background: var(--cyber-accent1);
+            color: var(--cyber-dark);
+            box-shadow: 0 0 12px var(--cyber-accent1);
+        }
+        .sidebar-label {
+            font-size: 0.7rem;
+            color: var(--cyber-accent2);
+            text-align: center;
+            margin-top: 2px;
+            font-family: 'Orbitron', monospace;
+        }
+        .main-content {
+            flex: 1;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header-bar {
+            background: #1a2230;
+            color: var(--cyber-accent1);
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            padding: 18px 32px;
+            border-bottom: 2px solid var(--cyber-accent1);
+            letter-spacing: 2px;
+            text-shadow: 0 0 8px var(--cyber-accent1);
+        }
+        .section-content {
+            flex: 1;
+            padding: 32px 40px;
+            background: var(--cyber-bg);
+            min-height: 0;
+            overflow-y: auto;
+        }
+        .news-list {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .news-card {
+            background: var(--cyber-panel);
+            border: 1.5px solid var(--cyber-accent1);
+            border-radius: 6px;
+            padding: 18px;
+            box-shadow: 0 0 12px #0e1621;
+        }
+        .news-title {
+            color: var(--cyber-accent1);
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .news-meta {
+            color: var(--cyber-accent2);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        .news-text {
+            color: var(--cyber-white);
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .btn {
+            background: var(--cyber-accent1);
+            color: var(--cyber-white);
+            border: none;
+            padding: 8px 16px;
+            font-family: 'Orbitron', monospace;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-right: 8px;
+            margin-top: 6px;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        .btn:last-child { margin-right: 0; }
+        .btn:hover {
+            background: var(--cyber-accent2);
+            color: var(--cyber-dark);
+            box-shadow: 0 0 12px var(--cyber-accent2);
+        }
+        .sentiment-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        .sentiment-positive { background: var(--sentiment-positive); color: var(--cyber-dark); }
+        .sentiment-neutral { background: var(--sentiment-neutral); color: var(--cyber-dark); }
+        .sentiment-negative { background: var(--sentiment-negative); color: var(--cyber-white); }
+        .loading { color: var(--cyber-accent1); text-align: center; margin: 40px 0; }
+        .error { color: var(--sentiment-negative); background: rgba(255,68,68,0.1); padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .success { color: var(--sentiment-positive); background: rgba(0,255,68,0.1); padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        
+        /* Stili per l'interfaccia di ricerca */
+        .search-control-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--cyber-panel);
+            border: 1px solid var(--cyber-accent1);
+            border-radius: 6px;
+        }
+        
+        .search-control-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--cyber-accent1);
+            font-weight: bold;
+        }
+        
+        .search-control-group select,
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--cyber-dark);
+            color: var(--cyber-accent1);
+            border: 1px solid var(--cyber-accent1);
+            border-radius: 4px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .search-control-group select:focus,
+        .search-input:focus {
+            outline: none;
+            border-color: var(--cyber-accent2);
+            box-shadow: 0 0 8px var(--cyber-accent2);
+        }
+        
+        .ticker-controls,
+        .provider-buttons,
+        .search-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            flex: 1;
+        }
+        
+        .btn-secondary {
+            background: var(--cyber-accent2);
+            color: var(--cyber-dark);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--cyber-accent1);
+            color: var(--cyber-white);
+        }
+        
+        .ticker-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--cyber-accent1);
+            padding: 10px;
+            background: var(--cyber-dark);
+            border-radius: 4px;
+        }
+        
+        .ticker-label {
+            display: block;
+            padding: 4px 8px;
+            margin: 2px 0;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .ticker-label:hover {
+            background: var(--cyber-accent1);
+            color: var(--cyber-dark);
+        }
+        
+        .ticker-checkbox {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+        
+        .provider-selector {
+            background: var(--cyber-panel);
+            border: 1px solid var(--cyber-accent2);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .provider-header {
+            background: var(--cyber-accent1);
+            color: var(--cyber-dark);
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .provider-controls {
+            margin-bottom: 10px;
+        }
+        
+        .providers-list {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid var(--cyber-accent2);
+            padding: 10px;
+            background: var(--cyber-dark);
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .provider-checkbox-label {
+            display: block;
+            padding: 8px;
+            margin: 4px 0;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background 0.2s;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(0,255,231,0.2);
+        }
+        
+        .provider-checkbox-label:last-child {
+            border-bottom: none;
+        }
+        
+        .provider-checkbox-label:hover {
+            background: var(--cyber-accent1);
+            color: var(--cyber-dark);
+        }
+        
+        .provider-checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+        
+        .provider-checkbox-label strong {
+            color: var(--cyber-accent2);
+        }
+        
+        .provider-checkbox-label small {
+            color: #888;
+            font-size: 0.8rem;
+        }
+        
+        .provider-info {
+            background: var(--cyber-accent1);
+            color: var(--cyber-dark);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .search-params {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .search-params label {
+            margin-bottom: 0;
+            white-space: nowrap;
+        }
+        
+        .search-params select {
+            width: auto;
+            margin-bottom: 0;
+        }
+        
+        .search-status {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .search-status .loading {
+            color: var(--cyber-accent1);
+            text-align: center;
+            margin: 0;
+        }
+        
+        .search-status .error {
+            color: var(--sentiment-negative);
+            background: rgba(255,68,68,0.1);
+            margin: 0;
+        }
+        
+        .search-status .success {
+            color: var(--sentiment-positive);
+            background: rgba(0,255,68,0.1);
+            margin: 0;
+        }
+        
+        .ticker-badge {
+            background: var(--cyber-accent1);
+            color: var(--cyber-dark);
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            border-radius: 3px;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        
+        .provider-badge {
+            background: var(--cyber-accent2);
+            color: var(--cyber-dark);
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            border-radius: 3px;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        
+        .sentiment-positive { color: var(--sentiment-positive); }
+        .sentiment-negative { color: var(--sentiment-negative); }
+        .sentiment-neutral { color: var(--sentiment-neutral); }
+        
+        .search-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+        .dropdown-icon { display: none; }
+        .ticker-list.dropdown {
+            display: block !important;
+            position: static;
+            border-radius: 4px;
+            box-shadow: none;
+            margin-top: 0;
+        }
+        .ticker-label {
+            cursor: pointer;
+        }
+        
+        @media (max-width: 900px) {
+            .main-content { padding: 0; }
+            .section-content { padding: 16px 4vw; }
+            .header-bar { font-size: 1.2rem; padding: 12px 10px; }
+            .sidebar { width: 60px; }
+            .sidebar-btn { width: 40px; height: 40px; font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <button class="sidebar-btn active" id="btn-search" onclick="showSection('search')" title="Ricerca"> 50d</button>
+        <div class="sidebar-label">Ricerca</div>
+        <button class="sidebar-btn" id="btn-saved" onclick="showSection('saved')" title="News Salvate"> 4f0</button>
+        <div class="sidebar-label">Salvate</div>
+        <button class="sidebar-btn" id="btn-analyze" onclick="showSection('analyze')" title="Analizza"> 52c</button>
+        <div class="sidebar-label">Analizza</div>
+    </div>
+    <div class="main-content">
+        <div class="header-bar">DOLLARPUNK</div>
+        <div class="section-content" id="section-search">
+            <h2>🔍 Ricerca News</h2>
+            <div id="search-area">
+                <!-- Selettore Mercato -->
+                <div class="search-control-group">
+                    <label for="market-slicer"><b>Mercato:</b></label>
+                    <select id="market-slicer" onchange="filterByMarket()">
+                        <option value="ALL">Tutti</option>
+                        <option value="ITA">ITA</option>
+                        <option value="USA">USA</option>
+                    </select>
+                </div>
+
+                <!-- Selettore Provider Italiani (visibile solo per mercato italiano) -->
+                <div id="italian-provider-selector" class="provider-selector" style="display: none;">
+                    <div class="provider-header">
+                        <strong>🇮🇹 Mercato Italiano Selezionato</strong><br>
+                        <small>Seleziona uno o più provider per una ricerca completa:</small>
+                    </div>
+                    
+                    <div class="provider-controls">
+                        <label><b>📰 Provider News Italiane:</b></label>
+                        <div class="provider-buttons">
+                            <button class="btn btn-small" onclick="selectAllItalianProviders()">Seleziona Tutti</button>
+                            <button class="btn btn-small" onclick="deselectAllItalianProviders()">Deseleziona Tutti</button>
+                        </div>
+                    </div>
+                    
+                    <div id="italian-providers-list" class="providers-list">
+                        <label class="provider-checkbox-label">
+                            <input type="checkbox" class="italian-provider-checkbox" value="ansa" checked onchange="updateSelectedProviders()">
+                            <strong>ANSA</strong> - Agenzia Nazionale Stampa<br>
+                            <small>News generali e finanziarie italiane</small>
+                        </label>
+                        
+                        <label class="provider-checkbox-label">
+                            <input type="checkbox" class="italian-provider-checkbox" value="ilsole24ore" onchange="updateSelectedProviders()">
+                            <strong>Il Sole 24 Ore</strong> - Economia & Finanza<br>
+                            <small>Analisi finanziarie dettagliate</small>
+                        </label>
+                        
+                        <label class="provider-checkbox-label">
+                            <input type="checkbox" class="italian-provider-checkbox" value="repubblica" onchange="updateSelectedProviders()">
+                            <strong>La Repubblica</strong> - News Generali<br>
+                            <small>Copertura generale del mercato</small>
+                        </label>
+                        
+                        <label class="provider-checkbox-label">
+                            <input type="checkbox" class="italian-provider-checkbox" value="corriere" onchange="updateSelectedProviders()">
+                            <strong>Corriere della Sera</strong> - News Nazionali<br>
+                            <small>Copertura nazionale</small>
+                        </label>
+                        
+                        <label class="provider-checkbox-label">
+                            <input type="checkbox" class="italian-provider-checkbox" value="bloomberg_italia" onchange="updateSelectedProviders()">
+                            <strong>Bloomberg Italia</strong> - Finanza Globale<br>
+                            <small>Prospettiva internazionale</small>
+                        </label>
+                    </div>
+                    
+                    <div id="selected-providers-info" class="provider-info">
+                        ✅ Selezionati: ANSA (1/5 provider)
+                    </div>
+                </div>
+                
+                <!-- Indicazione Provider per Mercato USA -->
+                <div id="usa-provider-info" class="provider-info" style="display: none;">
+                    <strong>🇺🇸 Mercato USA Selezionato</strong><br>
+                    <small>Provider: NewsAPI (Internazionale) - News globali in inglese</small>
+                </div>
+                
+                <!-- Indicazione Provider per Mercato Tutti -->
+                <div id="all-provider-info" class="provider-info" style="display: none;">
+                    <strong>🌍 Tutti i Mercati Selezionati</strong><br>
+                    <small>Provider: NewsAPI (Internazionale) - News globali multilingua</small>
+                </div>
+
+                <!-- Controlli Ticker -->
+                <div class="search-control-group">
+                    <div class="ticker-controls">
+                        <button class="btn btn-small" onclick="selectAllTickers()">Seleziona Tutti</button>
+                        <button class="btn btn-small" onclick="deselectAllTickers()">Deseleziona Tutti</button>
+                    </div>
+                    <div class="search-input-wrapper">
+                        <input type="text" id="search-ticker" placeholder="🔍 Cerca ticker o nome azienda..." class="search-input" autocomplete="off">
+                        <div id="ticker-list" class="ticker-list dropdown"></div>
+                    </div>
+                </div>
+
+                <!-- Controlli Ricerca -->
+                <div class="search-control-group">
+                    <div class="search-params">
+                        <label>Giorni indietro: </label>
+                        <select id="days-back">
+                            <option value="1">Ultimo giorno</option>
+                            <option value="3">Ultimi 3 giorni</option>
+                            <option value="7" selected>Ultima settimana</option>
+                            <option value="14">Ultime 2 settimane</option>
+                            <option value="30">Ultimo mese</option>
+                        </select>
+                    </div>
+                    <div class="search-buttons">
+                        <button class="btn" onclick="searchTickerNews()">🔍 Cerca News</button>
+                        <button class="btn btn-secondary" onclick="saveNewsLocally()">💾 Salva News</button>
+                    </div>
+                </div>
+
+                <!-- Status e Risultati -->
+                <div id="search-status" class="search-status"></div>
+                <div id="search-results" class="news-list"></div>
+            </div>
+        </div>
+        <div class="section-content" id="section-saved" style="display:none;">
+            <h2>📰 News Salvate</h2>
+            <div id="saved-news-list" class="news-list">
+                <div class="loading">Caricamento news salvate...</div>
+            </div>
+        </div>
+        <div class="section-content" id="section-analyze" style="display:none;">
+            <h2>🧠 Analizza Sentiment</h2>
+            <div id="analyze-news-list" class="news-list">
+                <div class="loading">Caricamento news salvate...</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Sidebar navigation logic
+        function showSection(section) {
+            document.getElementById('section-search').style.display = section === 'search' ? '' : 'none';
+            document.getElementById('section-saved').style.display = section === 'saved' ? '' : 'none';
+            document.getElementById('section-analyze').style.display = section === 'analyze' ? '' : 'none';
+            document.getElementById('btn-search').classList.toggle('active', section === 'search');
+            document.getElementById('btn-saved').classList.toggle('active', section === 'saved');
+            document.getElementById('btn-analyze').classList.toggle('active', section === 'analyze');
+            if(section === 'saved') loadSavedNewsList();
+            if(section === 'analyze') loadAnalyzeNewsList();
+            if(section === 'search') initializeSearch();
+        }
+
+        // Variabili globali per la ricerca
+        let allTickers = [];
+        let filteredTickers = [];
+        let selectedTickers = [];
+        let lastNewsResults = [];
+        let currentMarket = 'ALL';
+        let selectedItalianProviders = ['ansa']; // Default: ANSA selezionato
+
+        // Inizializza la sezione di ricerca
+        function initializeSearch() {
+            loadTickers();
+            updateSelectedProviders();
+        }
+
+        // Carica la lista dei ticker
+        function loadTickers() {
+            fetch('/tickers')
+                .then(res => res.json())
+                .then(data => {
+                    allTickers = data.sort((a, b) => a.symbol.localeCompare(b.symbol));
+                    filteredTickers = allTickers;
+                    renderTickerCheckboxes();
+                })
+                .catch(err => {
+                    console.error('Errore nel caricamento tickers:', err);
+                    document.getElementById('ticker-list').innerHTML = '<p class="loading">Errore nel caricamento dei ticker</p>';
+                });
+        }
+        fetch('/tickers')
+            .then(res => res.json())
+            .then(data => {
+                allTickers = data.sort((a, b) => a.symbol.localeCompare(b.symbol));
+                filteredTickers = allTickers;
+                renderTickerCheckboxes();
+            })
+            .catch(err => {
+                console.error('Errore nel caricamento tickers:', err);
+                document.getElementById('ticker-list').innerHTML = '<p class="loading">Errore nel caricamento dei ticker</p>';
+            });
+        // Filtra per mercato
+        function filterByMarket() {
+            currentMarket = document.getElementById('market-slicer').value;
+            
+            // Nascondi tutti i selettori provider
+            document.getElementById('italian-provider-selector').style.display = 'none';
+            document.getElementById('usa-provider-info').style.display = 'none';
+            document.getElementById('all-provider-info').style.display = 'none';
+            
+            if (currentMarket === 'ALL') {
+                filteredTickers = allTickers;
+                document.getElementById('all-provider-info').style.display = 'block';
+            } else {
+                filteredTickers = allTickers.filter(t => t.market === currentMarket);
+                if (currentMarket === 'ITA') {
+                    document.getElementById('italian-provider-selector').style.display = 'block';
+                } else if (currentMarket === 'USA') {
+                    document.getElementById('usa-provider-info').style.display = 'block';
+                }
+            }
+            renderTickerCheckboxes();
+            updateSelectedTickers();
+        }
+
+        // Gestione provider italiani
+        function updateSelectedProviders() {
+            const checkboxes = document.querySelectorAll('.italian-provider-checkbox:checked');
+            selectedItalianProviders = Array.from(checkboxes).map(cb => cb.value);
+            
+            const infoDiv = document.getElementById('selected-providers-info');
+            const totalProviders = 5;
+            
+            if (selectedItalianProviders.length === 0) {
+                infoDiv.innerHTML = '⚠️ Nessun provider selezionato - seleziona almeno un provider';
+                infoDiv.style.color = '#e74c3c';
+            } else if (selectedItalianProviders.length === totalProviders) {
+                infoDiv.innerHTML = `✅ Tutti i provider selezionati (${totalProviders}/${totalProviders})`;
+                infoDiv.style.color = '#27ae60';
+            } else {
+                const providerNames = selectedItalianProviders.map(p => getProviderDisplayName(p)).join(', ');
+                infoDiv.innerHTML = `✅ Selezionati: ${providerNames} (${selectedItalianProviders.length}/${totalProviders} provider)`;
+                infoDiv.style.color = '#666';
+            }
+        }
+        
+        function selectAllItalianProviders() {
+            const checkboxes = document.querySelectorAll('.italian-provider-checkbox');
+            checkboxes.forEach(cb => cb.checked = true);
+            updateSelectedProviders();
+        }
+        
+        function deselectAllItalianProviders() {
+            const checkboxes = document.querySelectorAll('.italian-provider-checkbox');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelectedProviders();
+        }
+
+        // Gestione ticker
+        function renderTickerCheckboxes() {
+            const listDiv = document.getElementById('ticker-list');
+            if (filteredTickers.length === 0) {
+                listDiv.innerHTML = '<div style="padding:8px; color:var(--cyber-accent2);">Nessun risultato</div>';
+                return;
+            }
+            listDiv.innerHTML = filteredTickers.map(t =>
+                `<label class='ticker-label'><input type='checkbox' class='ticker-checkbox' value='${t.symbol}' ${selectedTickers.includes(t.symbol) ? 'checked' : ''} onchange='updateSelectedTickers()'>${t.symbol} - ${t.name}</label>`
+            ).join('<br>');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-ticker');
+            renderTickerCheckboxes();
+            searchInput.addEventListener('input', function() {
+                const val = this.value.toLowerCase();
+                filteredTickers = allTickers.filter(t =>
+                    t.symbol.toLowerCase().includes(val) ||
+                    t.name.toLowerCase().includes(val)
+                );
+                renderTickerCheckboxes();
+            });
+        });
+
+        function updateSelectedTickers() {
+            const checkboxes = document.querySelectorAll('.ticker-checkbox:checked');
+            selectedTickers = Array.from(checkboxes).map(cb => cb.value);
+        }
+
+        function selectAllTickers() {
+            selectedTickers = filteredTickers.map(t => t.symbol);
+            renderTickerCheckboxes();
+            updateSelectedTickers();
+        }
+
+        function deselectAllTickers() {
+            selectedTickers = [];
+            renderTickerCheckboxes();
+            updateSelectedTickers();
+        }
+
+        // Ricerca news
+        function searchTickerNews() {
+            if (selectedTickers.length === 0) {
+                alert('Seleziona almeno un ticker prima di cercare news!');
+                return;
+            }
+
+            const daysBack = document.getElementById('days-back').value;
+            let provider = 'newsapi';
+            let providers = [];
+            
+            if (currentMarket === 'ITA') {
+                providers = selectedItalianProviders;
+                provider = selectedItalianProviders[0] || 'newsapi';
+            } else {
+                providers = ['newsapi'];
+            }
+            
+            const statusDiv = document.getElementById('search-status');
+
+            // Lista ticker italiani
+            const italianTickers = [
+                'ENEL', 'ENI', 'ISP', 'UCG', 'STM', 'ATL', 'G', 'SRG', 'TEN', 'TRN', 'BMED', 'BAMI', 'MB', 'BMPS', 'BZU', 'CPR', 'DIA', 'F', 'FBK', 'JUVE', 'LDO', 'MONC', 'PIRC', 'PRY', 'RACE', 'REC', 'SFER', 'TIT', 'UNI', 'BZU', 'IGD', 'CASS', 'CARR', 'CNHI', 'EXO', 'FCA', 'FERR', 'FNM', 'IGD', 'INW', 'IP', 'IT', 'LUX', 'MED', 'PST', 'SNA', 'SPM', 'UCG', 'UNI', 'VIV', 'BPE', 'BPSO', 'BPER', 'BPM', 'BAMI', 'BMPS', 'BZU', 'CASS', 'CARR', 'CNHI', 'EXO', 'FCA', 'FERR', 'FNM', 'IGD', 'INW', 'IP', 'IT', 'LUX', 'MED', 'PST', 'SNA', 'SPM', 'UCG', 'UNI', 'VIV'
+            ];
+            
+            const italianProviders = ["ansa", "ilsole24ore", "repubblica", "corriere", "bloomberg_italia"];
+            const hasItalianProviders = providers.some(p => italianProviders.includes(p));
+            
+            if (hasItalianProviders) {
+                const nonItalian = selectedTickers.filter(t => !italianTickers.includes(t.toUpperCase()));
+                if (nonItalian.length > 0) {
+                    statusDiv.innerHTML = `<div class="error">❌ I provider italiani supportano solo aziende italiane. Seleziona solo ticker italiani come ENEL, ENI, ISP, UCG, STM, ATL, ecc.<br>Per aziende estere usa NewsAPI (Internazionale) come provider.<br><span style='font-size: 0.9em;'>Ticker non supportati: ${nonItalian.join(", ")}</span></div>`;
+                    return;
+                }
+            }
+            
+            if (currentMarket === 'ITA' && selectedItalianProviders.length === 0) {
+                statusDiv.innerHTML = `<div class="error">❌ Seleziona almeno un provider italiano prima di cercare news!</div>`;
+                return;
+            }
+
+            statusDiv.innerHTML = '<div class="loading">🔍 Ricerca news in corso...</div>';
+            
+            fetch('/search_ticker_news', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tickers: selectedTickers,
+                    days_back: parseInt(daysBack),
+                    provider: provider,
+                    providers: providers
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const marketInfo = currentMarket === 'ITA' ? 'Italia' : 
+                                     currentMarket === 'USA' ? 'USA' : 'Internazionale';
+                    
+                    let providerInfo = '';
+                    if (data.providers && data.providers.length > 1) {
+                        const providerNames = data.providers.map(p => getProviderDisplayName(p)).join(', ');
+                        providerInfo = `📰 Provider: ${providerNames} (${data.providers.length} provider)`;
+                    } else {
+                        const providerName = getProviderDisplayName(data.provider);
+                        providerInfo = `📰 Provider: ${providerName}`;
+                    }
+                    
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Trovate ${data.total_articles} news per ${selectedTickers.join(', ')}<br>
+                            ${providerInfo}<br>
+                            🎯 Mercato: ${marketInfo}<br>
+                            💾 Salvate nella sessione: ${data.user_id.substring(0, 8)}...
+                        </div>
+                    `;
+                    displaySearchResults(data.articles);
+                    lastNewsResults = data.articles;
+                } else {
+                    statusDiv.innerHTML = `<div class="error">❌ Errore: ${data.error}</div>`;
+                }
+            })
+            .catch(err => {
+                statusDiv.innerHTML = `<div class="error">❌ Errore di rete: ${err.message}</div>`;
+            });
+        }
+
+        // Visualizza risultati ricerca
+        function displaySearchResults(articles) {
+            const resultsDiv = document.getElementById('search-results');
+            if (articles.length === 0) {
+                resultsDiv.innerHTML = '<p class="loading">Nessuna news trovata</p>';
+                return;
+            }
+            resultsDiv.innerHTML = `
+                <h3>Risultati Ricerca (${articles.length} articoli)</h3>
+                ${articles.map((article, index) => `
+                    <div class="news-card">
+                        <div class="news-title" onclick="toggleSearchDetails(${index})">
+                            📰 ${article.title}
+                        </div>
+                        <div class="news-meta">
+                            <span class="ticker-badge">${article.ticker}</span>
+                            📅 ${formatDate(article.publishedAt)} | 
+                            📰 ${article.source} |
+                            ${article.provider ? `<span class="provider-badge">${getProviderDisplayName(article.provider)}</span> |` : ''}
+                            <span class="sentiment-${article.sentiment}">${getSentimentIcon(article.sentiment)} ${article.sentiment}</span>
+                        </div>
+                        <div id="search-details-${index}" class="news-details" style="display:none;">
+                            <p><strong>Descrizione:</strong> ${article.description || 'N/A'}</p>
+                            <p><strong>Contenuto:</strong> ${article.text || 'N/A'}</p>
+                            <p><a href="${article.url}" target="_blank" style="color: var(--cyber-accent1);">🔗 Leggi articolo completo</a></p>
+                        </div>
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        function toggleSearchDetails(index) {
+            const details = document.getElementById(`search-details-${index}`);
+            details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Salva news localmente
+        function saveNewsLocally() {
+            if (!lastNewsResults || lastNewsResults.length === 0) {
+                alert('Nessuna news da salvare!');
+                return;
+            }
+            
+            selectedTickers.forEach(ticker => {
+                const newNews = lastNewsResults.filter(news => news.ticker === ticker);
+                if (newNews.length === 0) return;
+                
+                const existing = JSON.parse(localStorage.getItem('local_news_' + ticker) || '[]');
+                const all = [...existing];
+                newNews.forEach(news => {
+                    if (!all.some(n => n.url === news.url)) {
+                        all.push(news);
+                    }
+                });
+                localStorage.setItem('local_news_' + ticker, JSON.stringify(all));
+            });
+            alert('News aggiunte localmente per ogni ticker selezionato!');
+        }
+
+        // Funzioni helper
+        function getProviderDisplayName(provider) {
+            const providerNames = {
+                'newsapi': 'NewsAPI (Internazionale)',
+                'ansa': 'ANSA',
+                'ilsole24ore': 'Il Sole 24 Ore',
+                'repubblica': 'La Repubblica',
+                'corriere': 'Corriere della Sera',
+                'bloomberg_italia': 'Bloomberg Italia'
+            };
+            return providerNames[provider] || provider;
+        }
+
+        function getSentimentIcon(sentiment) {
+            switch(sentiment) {
+                case 'positive': return '📈';
+                case 'negative': return '📉';
+                default: return '➡️';
+            }
+        }
+
+        // Carica news salvate per la sezione "News Salvate"
+        async function loadSavedNewsList() {
+            const container = document.getElementById('saved-news-list');
+            container.innerHTML = '<div class="loading">Caricamento news salvate...</div>';
+            try {
+                const response = await fetch('/saved_news');
+                const data = await response.json();
+                if(data.news && data.news.length > 0) {
+                    let allNews = [];
+                    data.news.forEach(search => {
+                        if(search.articles) allNews.push(...search.articles);
+                    });
+                    if(allNews.length === 0) {
+                        container.innerHTML = '<div class="loading">Nessuna news salvata trovata.</div>';
+                        return;
+                    }
+                    container.innerHTML = allNews.map(news => `
+                        <div class="news-card">
+                            <div class="news-title">${news.title || 'Titolo non disponibile'}</div>
+                            <div class="news-meta">${news.source || 'Fonte sconosciuta'} | ${formatDate(news.publishedAt)}</div>
+                            <div class="news-text">${news.text || news.description || 'Contenuto non disponibile'}</div>
+                            <a href="${news.url}" target="_blank" class="btn">Leggi Articolo</a>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">Nessuna news salvata trovata.</div>';
+                }
+            } catch (error) {
+                container.innerHTML = '<div class="error">Errore nel caricamento delle news: ' + error.message + '</div>';
+            }
+        }
+
+        // Carica news salvate per la sezione "Analizza"
+        async function loadAnalyzeNewsList() {
+            const container = document.getElementById('analyze-news-list');
+            container.innerHTML = '<div class="loading">Caricamento news salvate...</div>';
+            try {
+                const response = await fetch('/saved_news');
+                const data = await response.json();
+                if(data.news && data.news.length > 0) {
+                    let allNews = [];
+                    data.news.forEach(search => {
+                        if(search.articles) allNews.push(...search.articles);
+                    });
+                    if(allNews.length === 0) {
+                        container.innerHTML = '<div class="loading">Nessuna news salvata trovata.</div>';
+                        return;
+                    }
+                    container.innerHTML = allNews.map((news, idx) => `
+                        <div class="news-card" id="analyze-card-${idx}">
+                            <div class="news-title">${news.title || 'Titolo non disponibile'}</div>
+                            <div class="news-meta">${news.source || 'Fonte sconosciuta'} | ${formatDate(news.publishedAt)}</div>
+                            <div class="news-text">${news.text || news.description || 'Contenuto non disponibile'}</div>
+                            ${news.sentiment_analysis ? `
+                                <span class="sentiment-badge sentiment-${news.sentiment_analysis.sentiment}">
+                                    ${news.sentiment_analysis.sentiment.toUpperCase()}
+                                </span>
+                            ` : ''}
+                            <button class="btn" onclick="analyzeSingleSentiment(${idx})">Analizza Sentiment</button>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="loading">Nessuna news salvata trovata.</div>';
+                }
+            } catch (error) {
+                container.innerHTML = '<div class="error">Errore nel caricamento delle news: ' + error.message + '</div>';
+            }
+        }
+
+        // Analizza sentiment di una singola news
+        async function analyzeSingleSentiment(idx) {
+            const container = document.getElementById('analyze-news-list');
+            const card = document.getElementById(`analyze-card-${idx}`);
+            const response = await fetch('/saved_news');
+            const data = await response.json();
+            let allNews = [];
+            data.news.forEach(search => { if(search.articles) allNews.push(...search.articles); });
+            const news = allNews[idx];
+            const text = `${news.title || ''} ${news.text || news.description || ''}`;
+            if (!text || text.length < 10) {
+                card.innerHTML += '<div class="error">Testo troppo corto per analisi sentiment</div>';
+                return;
+            }
+            card.innerHTML += '<div class="loading">Analisi sentiment in corso...</div>';
+            try {
+                const res = await fetch('/analyze_sentiment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const sentiment = await res.json();
+                if (sentiment.sentiment) {
+                    card.innerHTML += `<div class="success">Sentiment: <span class="sentiment-badge sentiment-${sentiment.sentiment}">${sentiment.sentiment.toUpperCase()}</span></div>`;
+                } else {
+                    card.innerHTML += `<div class="error">Errore: ${sentiment.error || 'Errore sconosciuto'}</div>`;
+                }
+            } catch (error) {
+                card.innerHTML += `<div class="error">Errore: ${error.message}</div>`;
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Data non disponibile';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('it-IT', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return 'Data non valida';
+            }
+        }
+    </script>
+</body>
+</html> 

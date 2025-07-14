@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dollarpunk - News Salvate & Sentiment Analysis</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyber-bg: #181c24;
+            --cyber-panel: #232a34;
+            --cyber-accent1: #00bfff;
+            --cyber-accent2: #00ffe7;
+            --cyber-accent3: #ffe600;
+            --cyber-accent4: #00ff44;
+            --cyber-white: #f4f8fb;
+            --cyber-dark: #10141a;
+            --cyber-glow: 0 0 8px var(--cyber-accent1);
+            --sentiment-positive: #00ff44;
+            --sentiment-neutral: #ffe600;
+            --sentiment-negative: #ff4444;
+        }
+        
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Roboto Mono', 'Arial', sans-serif;
+            background: var(--cyber-bg);
+            color: var(--cyber-white);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #1a2230;
+            padding: 20px;
+            border-bottom: 2px solid var(--cyber-accent1);
+            box-shadow: 0 2px 12px #0e1621;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            color: var(--cyber-accent1);
+            text-shadow: 0 0 6px var(--cyber-accent1);
+            text-transform: uppercase;
+        }
+        
+        .back-btn {
+            background: var(--cyber-accent1);
+            color: var(--cyber-white);
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Orbitron', monospace;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 8px var(--cyber-accent1);
+            transition: all 0.2s;
+        }
+        
+        .back-btn:hover {
+            background: var(--cyber-accent2);
+            color: var(--cyber-dark);
+            box-shadow: 0 0 12px var(--cyber-accent2);
+        }
+        
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .stats-panel {
+            background: var(--cyber-panel);
+            border: 1px solid var(--cyber-accent1);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 12px #0e1621;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: var(--cyber-dark);
+            border: 1px solid var(--cyber-accent1);
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-positive { color: var(--sentiment-positive); }
+        .stat-neutral { color: var(--sentiment-neutral); }
+        .stat-negative { color: var(--sentiment-negative); }
+        .stat-total { color: var(--cyber-accent1); }
+        
+        .controls-panel {
+            background: var(--cyber-panel);
+            border: 1px solid var(--cyber-accent1);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 12px #0e1621;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .btn {
+            background: var(--cyber-accent1);
+            color: var(--cyber-white);
+            border: none;
+            padding: 12px 20px;
+            font-family: 'Orbitron', monospace;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 8px var(--cyber-accent1);
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .btn:hover {
+            background: var(--cyber-accent2);
+            color: var(--cyber-dark);
+            box-shadow: 0 0 12px var(--cyber-accent2);
+        }
+        
+        .btn-success { background: var(--sentiment-positive); }
+        .btn-warning { background: var(--sentiment-neutral); }
+        .btn-danger { background: var(--sentiment-negative); }
+        
+        .filter-select {
+            background: var(--cyber-dark);
+            color: var(--cyber-accent1);
+            border: 1px solid var(--cyber-accent1);
+            padding: 10px;
+            font-family: 'Roboto Mono', monospace;
+            border-radius: 3px;
+        }
+        
+        .news-container {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .news-card {
+            background: var(--cyber-panel);
+            border: 1px solid var(--cyber-accent1);
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 12px #0e1621;
+            transition: all 0.2s;
+        }
+        
+        .news-card:hover {
+            box-shadow: 0 0 20px var(--cyber-accent1);
+        }
+        
+        .news-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .news-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--cyber-accent1);
+            margin-bottom: 10px;
+            flex: 1;
+        }
+        
+        .sentiment-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+        
+        .sentiment-positive {
+            background: var(--sentiment-positive);
+            color: var(--cyber-dark);
+        }
+        
+        .sentiment-neutral {
+            background: var(--sentiment-neutral);
+            color: var(--cyber-dark);
+        }
+        
+        .sentiment-negative {
+            background: var(--sentiment-negative);
+            color: var(--cyber-white);
+        }
+        
+        .news-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #b0c4de;
+        }
+        
+        .news-source {
+            color: var(--cyber-accent2);
+        }
+        
+        .news-date {
+            color: var(--cyber-accent3);
+        }
+        
+        .news-text {
+            color: var(--cyber-white);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .sentiment-details {
+            background: var(--cyber-dark);
+            border: 1px solid var(--cyber-accent1);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        
+        .sentiment-scores {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .score-item {
+            text-align: center;
+            padding: 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .score-positive { background: rgba(0, 255, 68, 0.2); color: var(--sentiment-positive); }
+        .score-neutral { background: rgba(255, 230, 0, 0.2); color: var(--sentiment-neutral); }
+        .score-negative { background: rgba(255, 68, 68, 0.2); color: var(--sentiment-negative); }
+        
+        .news-link {
+            color: var(--cyber-accent2);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .news-link:hover {
+            text-shadow: 0 0 5px var(--cyber-accent2);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--cyber-accent1);
+            font-size: 1.2rem;
+        }
+        
+        .error {
+            background: rgba(255, 68, 68, 0.2);
+            border: 1px solid var(--sentiment-negative);
+            color: var(--sentiment-negative);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background: rgba(0, 255, 68, 0.2);
+            border: 1px solid var(--sentiment-positive);
+            color: var(--sentiment-positive);
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .news-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .sentiment-scores {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1 class="header-title">📰 News Salvate & Sentiment Analysis</h1>
+            <button class="back-btn" onclick="window.location.href='/'">← Torna alla Ricerca</button>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <!-- Pannello Statistiche -->
+        <div class="stats-panel">
+            <h2>📊 Statistiche Sentiment</h2>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-number stat-total" id="totalNews">0</div>
+                    <div>Totale News</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-positive" id="positiveNews">0</div>
+                    <div>Positive</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-neutral" id="neutralNews">0</div>
+                    <div>Neutrali</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-negative" id="negativeNews">0</div>
+                    <div>Negative</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pannello Controlli -->
+        <div class="controls-panel">
+            <h2>🎛️ Controlli</h2>
+            <div class="controls-grid">
+                <div>
+                    <label for="sentimentFilter">Filtra per Sentiment:</label>
+                    <select id="sentimentFilter" class="filter-select">
+                        <option value="all">Tutte le News</option>
+                        <option value="positive">Solo Positive</option>
+                        <option value="neutral">Solo Neutrali</option>
+                        <option value="negative">Solo Negative</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="analyzeAllSentiment()">🔍 Analizza Sentiment</button>
+                <button class="btn btn-success" onclick="filterBySentiment()">🔍 Filtra</button>
+                <button class="btn btn-warning" onclick="refreshStats()">📊 Aggiorna Stats</button>
+                <button class="btn btn-danger" onclick="clearAllNews()">🗑️ Cancella Tutto</button>
+            </div>
+        </div>
+        
+        <!-- Messaggi di Stato -->
+        <div id="messageContainer"></div>
+        
+        <!-- Container News -->
+        <div class="news-container" id="newsContainer">
+            <div class="loading">Caricamento news salvate...</div>
+        </div>
+    </div>
+    
+    <script>
+        let allNews = [];
+        let currentFilter = 'all';
+        
+        // Carica le news salvate all'avvio
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSavedNews();
+        });
+        
+        async function loadSavedNews() {
+            try {
+                const response = await fetch('/saved_news');
+                const data = await response.json();
+                
+                if (data.news && data.news.length > 0) {
+                    // Estrai tutti gli articoli dalle ricerche salvate
+                    allNews = [];
+                    data.news.forEach(search => {
+                        if (search.articles) {
+                            allNews.push(...search.articles);
+                        }
+                    });
+                    
+                    displayNews(allNews);
+                    updateStats();
+                } else {
+                    document.getElementById('newsContainer').innerHTML = 
+                        '<div class="loading">Nessuna news salvata trovata. Torna alla ricerca per salvare alcune news!</div>';
+                }
+            } catch (error) {
+                showMessage('Errore nel caricamento delle news: ' + error.message, 'error');
+            }
+        }
+        
+        function displayNews(newsArray) {
+            const container = document.getElementById('newsContainer');
+            
+            if (newsArray.length === 0) {
+                container.innerHTML = '<div class="loading">Nessuna news trovata con i filtri applicati.</div>';
+                return;
+            }
+            
+            container.innerHTML = newsArray.map((news, idx) => `
+                <div class="news-card" id="news-card-${idx}">
+                    <div class="news-header">
+                        <div class="news-title">${news.title || 'Titolo non disponibile'}</div>
+                        ${news.sentiment_analysis ? 
+                            `<div class="sentiment-badge sentiment-${news.sentiment_analysis.sentiment}">
+                                ${news.sentiment_analysis.sentiment.toUpperCase()}
+                            </div>` : 
+                            '<div class="sentiment-badge sentiment-neutral">N/A</div>'
+                        }
+                    </div>
+                    
+                    <div class="news-meta">
+                        <span class="news-source">📰 ${news.source || 'Fonte sconosciuta'}</span>
+                        <span class="news-date">📅 ${formatDate(news.publishedAt)}</span>
+                        ${news.ticker ? `<span>🏢 ${news.ticker}</span>` : ''}
+                    </div>
+                    
+                    <div class="news-text">
+                        ${news.text || news.description || 'Contenuto non disponibile'}
+                    </div>
+                    
+                    ${news.sentiment_analysis && news.sentiment_analysis.scores ? `
+                        <div class="sentiment-details">
+                            <h4>📈 Dettagli Sentiment Analysis</h4>
+                            <div class="sentiment-scores">
+                                <div class="score-item score-positive">
+                                    <div>Positive</div>
+                                    <div>${(news.sentiment_analysis.scores.positive * 100).toFixed(1)}%</div>
+                                </div>
+                                <div class="score-item score-neutral">
+                                    <div>Neutral</div>
+                                    <div>${(news.sentiment_analysis.scores.neutral * 100).toFixed(1)}%</div>
+                                </div>
+                                <div class="score-item score-negative">
+                                    <div>Negative</div>
+                                    <div>${(news.sentiment_analysis.scores.negative * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 10px; font-size: 0.9rem; color: #b0c4de;">
+                                Confidence: ${(news.sentiment_analysis.confidence * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+                        <a href="${news.url}" target="_blank" class="news-link">🔗 Leggi Articolo Completo</a>
+                        <button class="btn btn-warning" onclick="analyzeSingleSentiment(${idx})">Analizza Sentiment</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function updateStats() {
+            const stats = {
+                total: allNews.length,
+                positive: 0,
+                neutral: 0,
+                negative: 0
+            };
+            
+            allNews.forEach(news => {
+                const sentiment = news.sentiment_analysis?.sentiment || 'neutral';
+                stats[sentiment]++;
+            });
+            
+            document.getElementById('totalNews').textContent = stats.total;
+            document.getElementById('positiveNews').textContent = stats.positive;
+            document.getElementById('neutralNews').textContent = stats.neutral;
+            document.getElementById('negativeNews').textContent = stats.negative;
+        }
+        
+        async function analyzeAllSentiment() {
+            try {
+                showMessage('Analisi sentiment in corso...', 'info');
+                
+                const response = await fetch('/analyze_saved_news_sentiment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    // Ricarica le news per mostrare i nuovi risultati
+                    await loadSavedNews();
+                } else {
+                    showMessage('Errore nell\'analisi: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Errore nell\'analisi sentiment: ' + error.message, 'error');
+            }
+        }
+        
+        function filterBySentiment() {
+            currentFilter = document.getElementById('sentimentFilter').value;
+            
+            let filteredNews = allNews;
+            if (currentFilter !== 'all') {
+                filteredNews = allNews.filter(news => 
+                    news.sentiment_analysis?.sentiment === currentFilter
+                );
+            }
+            
+            displayNews(filteredNews);
+        }
+        
+        async function refreshStats() {
+            try {
+                const response = await fetch('/get_sentiment_statistics');
+                const data = await response.json();
+                
+                if (data.statistics) {
+                    document.getElementById('totalNews').textContent = data.statistics.total;
+                    document.getElementById('positiveNews').textContent = data.statistics.positive;
+                    document.getElementById('neutralNews').textContent = data.statistics.neutral;
+                    document.getElementById('negativeNews').textContent = data.statistics.negative;
+                }
+            } catch (error) {
+                showMessage('Errore nell\'aggiornamento statistiche: ' + error.message, 'error');
+            }
+        }
+        
+        async function clearAllNews() {
+            if (confirm('Sei sicuro di voler cancellare tutte le news salvate?')) {
+                try {
+                    const response = await fetch('/clear_news', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showMessage('Tutte le news sono state cancellate', 'success');
+                        allNews = [];
+                        displayNews([]);
+                        updateStats();
+                    } else {
+                        showMessage('Errore nella cancellazione: ' + data.error, 'error');
+                    }
+                } catch (error) {
+                    showMessage('Errore nella cancellazione: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function analyzeSingleSentiment(idx) {
+            const news = allNews[idx];
+            const text = `${news.title || ''} ${news.text || news.description || ''}`;
+            const card = document.getElementById(`news-card-${idx}`);
+            if (!text || text.length < 10) {
+                showMessage('Testo troppo corto per analisi sentiment', 'error');
+                return;
+            }
+            // Mostra loading
+            const oldHTML = card.innerHTML;
+            card.innerHTML += '<div class="loading">Analisi sentiment in corso...</div>';
+            try {
+                const response = await fetch('/analyze_sentiment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await response.json();
+                if (data.sentiment) {
+                    // Aggiorna la news in memoria
+                    allNews[idx].sentiment_analysis = data;
+                    // Ridisegna la card
+                    displayNews(currentFilter === 'all' ? allNews : allNews.filter(news => news.sentiment_analysis?.sentiment === currentFilter));
+                    showMessage('Analisi sentiment completata!', 'success');
+                } else {
+                    card.innerHTML = oldHTML;
+                    showMessage('Errore nell\'analisi: ' + (data.error || 'Errore sconosciuto'), 'error');
+                }
+            } catch (error) {
+                card.innerHTML = oldHTML;
+                showMessage('Errore nell\'analisi sentiment: ' + error.message, 'error');
+            }
+        }
+        
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            
+            container.innerHTML = '';
+            container.appendChild(messageDiv);
+            
+            // Rimuovi il messaggio dopo 5 secondi
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 5000);
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Data non disponibile';
+            
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('it-IT', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return 'Data non valida';
+            }
+        }
+        
+        // Filtra automaticamente quando cambia la selezione
+        document.getElementById('sentimentFilter').addEventListener('change', filterBySentiment);
+    </script>
+</body>
+</html> 

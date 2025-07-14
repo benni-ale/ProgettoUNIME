@@ -8,3 +8,7 @@ lxml_html_clean
 feedparser==6.0.10
 beautifulsoup4==4.12.2
 requests==2.31.0
+transformers==4.35.0
+torch==2.1.0
+numpy==1.24.3
+pandas==2.0.3
